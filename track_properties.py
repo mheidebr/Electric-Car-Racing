@@ -2,10 +2,11 @@
 
 
 class TrackProperties:
-    def __init__(self, velocity_list, distance_list, lap_time):
+    def __init__(self, velocity_list, distance_list, lap_time, air_density):
         self.velocity_list = velocity_list
         self.distance_list = distance_list
         self.lap_time = lap_time
+        self.air_density = air_density
 
 
 # in meters/second
