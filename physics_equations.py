@@ -3,6 +3,26 @@
 from math import sqrt
 
 
+class PhysicsCalculationOutput():
+    """Class that contains the data
+    that every physics based function must return 
+    when doing a calculation over one segment of the track.
+
+    This includes:
+      - Final velocity (meters/second)
+      - distance traveled (meters)
+      - time of segment (seconds)
+      - energy differential of battery (joules)
+      - maybe other things later
+    TODO: add checks on output data
+    """
+    def __init__(self):
+        self.final_velocity = 0
+        self.distance_traveled = 0
+        self.time_of_segment = 0
+        self.energy_differential_of_battery = 0
+
+
 def rotational_inertia_calculation(rotational_mass, effective_radius):
     return rotational_mass * (effective_radius ** 2)
 
@@ -29,23 +49,25 @@ def time_of_travel_calculation(velocity, distance):
     return distance/velocity
 
 
-def final_velocity_calculation(initial_velocity,
-                               distance_of_travel,
-                               energy_battery,
-                               motor_efficiency,
-                               wheel_radius,
-                               rotational_inertia,
-                               mass,
-                               coefficient_of_drag,
-                               frontal_area,
-                               air_density,
-                               ):
+def free_acceleration_calculation(initial_velocity,
+                                  distance_of_travel,
+                                  energy_battery,
+                                  motor_efficiency,
+                                  wheel_radius,
+                                  rotational_inertia,
+                                  mass,
+                                  coefficient_of_drag,
+                                  frontal_area,
+                                  air_density):
     """Solve for final velocity using an energy balance.
     THIS MUST BE DONE OVER A SMALL distance_of_travel TO
     MAKE THE ASSUMPTIONS TRUE:
     Assumptions:
         - Drag force calculated using initial velocity because change in velocity is assumed to be small
         - No elevation change
+    
+    TODO: add in elevation change to equations
+    TODO: add in other drag losses to equations
 
     Elements included:
         - Initial and final kinetic energy
@@ -68,8 +90,9 @@ def final_velocity_calculation(initial_velocity,
         air_density (double): density of air car is travling through (kg/meters^3)
 
     Returns:
-        final_velocity (double): ending velocity for the car in the segment
+        output (PhysicsCalculationOutput): output data of the segment
     """
+    output = PhysicsCalculationOutput()
 
     initial_linear_kinetic_energy = kinetic_energy_calculation(mass, initial_velocity)
     initial_rotational_kinetic_energy \
@@ -90,28 +113,32 @@ def final_velocity_calculation(initial_velocity,
                   energy_battery * motor_efficiency)
     final_velocity = sqrt(energy_sum /
                           final_kinetic_energy_term)
-    
+
     # TODO MH Add in a check that the actual drag losses using the final velocity wouldn't be XX percent
     # different than the calculated one, if it would be then redo calc with smaller distance traveled
 
-    return final_velocity
+    return output
 
 
-def energy_consumption_constant_velocity(velocity,
-                                         distance_of_travel,
-                                         motor_efficiency,
-                                         coefficient_of_drag,
-                                         frontal_area,
-                                         air_density):
+def constrained_velocity_calculation(initial_velocity,
+                                     final_velocity,
+                                     distance_of_travel,
+                                     motor_efficiency,
+                                     coefficient_of_drag,
+                                     frontal_area,
+                                     air_density):
     """Calculate amount of energy used over a distance if the
-    velocity of the car must remain constant.
-    The energy consumed by the motor is calculated as the
-    energy due to drag forces.
+    velocity of the car is constrained.
+    TODO: if the velocity constraint results in a violation of some other
+    physical parameters then change to a different type of calculation or
+    raise an error
+
     Assumptions:
         - No change in elevation
 
     Args:
-        velocity (double): velocity of car (meters/second)
+        initial_velocity (double): initial velocity of car in the segment (meters/second)
+        final_velocity (double): final velocity of the car in the segment (meters/second)
         distance_of_travel (double): distance overwhich the car travels (meters)
         motor_efficiency (double): efficiency of motor (unitless)
         coefficient_of_drag (double): coefficient of drag of car (unitless)
@@ -119,9 +146,12 @@ def energy_consumption_constant_velocity(velocity,
         air_density (double): density of air car is travling through (kg/meters^3)
 
     Returns:
-        energy_battery (double): energy consumed or produced by the battery (joules)
+        output (PhysicsCalculationOutput): output data of the segment
+    
+    Raises:
+        (TODO) Some sort of error if the velocity constraints cannot be met
     """
-
+    output = PhysicsCalculationOutput()
     drag_force = drag_force_calculation(coefficient_of_drag,
                                         velocity,
                                         air_density,
@@ -129,4 +159,4 @@ def energy_consumption_constant_velocity(velocity,
     drag_energy = drag_force * distance_of_travel
     energy_battery = drag_energy/motor_efficiency
 
-    return energy_battery
+    return output
