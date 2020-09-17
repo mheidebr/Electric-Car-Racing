@@ -5,7 +5,7 @@ from math import sqrt
 
 class PhysicsCalculationOutput():
     """Class that contains the data
-    that every physics based function must return 
+    that every physics based function must return
     when doing a calculation over one segment of the track.
 
     This includes:
@@ -111,11 +111,15 @@ def free_acceleration_calculation(initial_velocity,
                   initial_rotational_kinetic_energy -
                   drag_energy +
                   energy_battery * motor_efficiency)
-    final_velocity = sqrt(energy_sum /
-                          final_kinetic_energy_term)
+    output.final_velocity = sqrt(energy_sum /
+                                 final_kinetic_energy_term)
 
     # TODO MH Add in a check that the actual drag losses using the final velocity wouldn't be XX percent
     # different than the calculated one, if it would be then redo calc with smaller distance traveled
+
+    output.time_of_segment = distance_of_travel / ((output.final_velocity + initial_velocity) / 2)
+    output.distance_traveled = distance_of_travel
+    output.energy_differential_of_battery = energy_battery
 
     return output
 
@@ -147,16 +151,20 @@ def constrained_velocity_calculation(initial_velocity,
 
     Returns:
         output (PhysicsCalculationOutput): output data of the segment
-    
+
     Raises:
         (TODO) Some sort of error if the velocity constraints cannot be met
     """
     output = PhysicsCalculationOutput()
     drag_force = drag_force_calculation(coefficient_of_drag,
-                                        velocity,
+                                        initial_velocity,
                                         air_density,
                                         frontal_area)
     drag_energy = drag_force * distance_of_travel
-    energy_battery = drag_energy/motor_efficiency
+    output.energy_differential_of_battery = drag_energy/motor_efficiency
+
+    output.final_velocity = final_velocity
+    output.distance_traveled = distance_of_travel
+    output.time_of_segment = distance_of_travel / ((final_velocity + initial_velocity) / 2)
 
     return output
