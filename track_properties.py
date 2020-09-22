@@ -1,10 +1,21 @@
-# All track/winning car properties go here
+#! /usr/bin/python3
 
 
 class TrackProperties:
     """Class for holding the critical points of the track.
     A critical point is where a track property changes (turn radius) or
     a car constraint changes (max velocity).
+
+    Class that holds relevant information about the track.
+    Critical points list should consist of thses elements:
+     - distance from start finish line (meters)
+     - max velocity (meters/s)
+     - velocity constraint, must be either "none" "linear" or "constant"
+     - elevation of the track (meters)
+     - width of the track (meters)
+     - radius of the track corner (meters) should be 'None' if the track is straight
+     - bank of the corner
+
     """
     def __init__(self, velocity_list, distance_list, lap_time, air_density):
         self.velocity_list = velocity_list
@@ -40,7 +51,6 @@ def generate_track_list(track_properties: TrackProperties, delta_distance):
 
 
     return track_list
-
 
 
 # in meters/second
