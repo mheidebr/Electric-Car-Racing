@@ -22,6 +22,7 @@ class TrackProperties:
         self.distance_list = distance_list
         self.lap_time = lap_time
         self.air_density = air_density
+
     def add_critical_point(distance_from_start_finish, type, value)
         this function must accept the critical point and put it in a list
         in the correct distance position (must sort)

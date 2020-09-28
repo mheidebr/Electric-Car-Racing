@@ -21,6 +21,7 @@ class PhysicsCalculationOutput():
         self.distance_traveled = 0
         self.time_of_segment = 0
         self.energy_differential_of_battery = 0
+        self.acceleration = 0
 
 
 def rotational_inertia_calculation(rotational_mass, effective_radius):
@@ -120,6 +121,7 @@ def free_acceleration_calculation(initial_velocity,
     output.time_of_segment = distance_of_travel / ((output.final_velocity + initial_velocity) / 2)
     output.distance_traveled = distance_of_travel
     output.energy_differential_of_battery = energy_battery
+    output.acceleration = (output.final_velocity - initial_velocity) / output.time_of_segment
 
     return output
 
