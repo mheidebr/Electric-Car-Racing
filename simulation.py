@@ -22,7 +22,7 @@ class RacingSimulationResults():
 
 
 class LapVelocitySimulationResults():
-    def __init__():
+    def __init__(self):
         end_velocity = 0
         lap_time = 0
         motor_power_profile = []
@@ -32,7 +32,7 @@ class LapVelocitySimulationResults():
 
 
 class PysicsSimultaionResults():
-    def __init__():
+    def __init__(self):
         end_velocity = 0
         time_of_segment = 0
         distance_of_segment = 0
@@ -63,13 +63,14 @@ def racing_simulation(car_properties: ElectricCarProperties,
 
 def lap_velocity_simulation(initial_velocity,
                             car_properties: ElectricCarProperties,
-                            track_properties: TrackProperties):
+                            track_properties: TrackProperties): # TODO this needs to be the track list not track properties!!
     """Function calculates the velocity profile of a car with
     car_properties on a track with track_properties. The car
     starts with an ititial velocity of initial_velocity.
 
     Args:
         initial_velocity (double): initial velocity of the car at time = 0
+        delta_distance (double): length over which each physics simulation is done
         car_properties (ElectricCarProperties): Characteristics of car being simulated
         track_properites (TrackProperties): Characteristics of track being simulated
 
@@ -77,10 +78,9 @@ def lap_velocity_simulation(initial_velocity,
         results (LapVelocitySimulationResults): output of the lap simulation
     """
     results = LapVelocitySimulationResults()
-
     output = physics_simulation(stuff)
 
-    results = output
+    results = output (maybe)
     return results
 
 
@@ -108,7 +108,7 @@ def physics_simulation(initial_velocity,
 
     results.distance_of_segment = distance_of_travel
     results.time_of_segment = time_of_travel_calculation(initial_velocity, distance_of_travel)
-    results.battery_energy = power_battery * results.time_of_segment
+    results.battery_energy = car_properties.motor_power * results.time_of_segment
 
     # Do calculations here
     results.end_velocity = final_velocity_calculation(initial_velocity,
@@ -121,7 +121,6 @@ def physics_simulation(initial_velocity,
                                                       car_properties.coefficient_of_drag,
                                                       car_properties.frontal_area,
                                                       track_properites.air_density)
-    
 
     return results
 
