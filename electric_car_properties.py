@@ -3,7 +3,7 @@
 
 # Make sure all units match! All units should be SI
 class ElectricCarProperties:
-    def __init__(self, mass, rotational_inertia, motor_power,
+    def __init__(self, mass, rotational_inertia, motor_power, motor_efficiency,
                  battery_capacity, drag_coefficient, frontal_area,
                  wheel_radius):
         if mass <= 0:
@@ -12,6 +12,8 @@ class ElectricCarProperties:
             raise Exception("Invalid Rotational Inertia {}".format(rotational_inertia))
         elif motor_power <= 0:
             raise Exception("Invalid motor power {}".format(motor_power))
+        elif not 0 <= motor_efficiency <= 1:
+            raise Exception("Invalid motor efficiency {}".format(motor_efficiency))
         elif battery_capacity <= 0:
             raise Exception("Invalid battery capacity {}".format(battery_capacity))
         # some assumption with drag coefficient that its not super high
@@ -25,6 +27,7 @@ class ElectricCarProperties:
             self.mass = mass
             self.rotational_inertia = rotational_inertia
             self.motor_power = motor_power
+            self.motor_efficiency = motor_efficiency
             self.battery_capacity = battery_capacity
             self.drag_coefficient = drag_coefficient
             self.frontal_area = frontal_area

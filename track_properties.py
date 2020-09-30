@@ -1,5 +1,8 @@
 #! /usr/bin/python3
 
+import collections
+import numpy
+
 
 class TrackProperties:
     """Class for holding the critical points of the track.
@@ -16,43 +19,89 @@ class TrackProperties:
      - radius of the track corner (meters) should be 'None' if the track is straight
      - bank of the corner
 
+
+    The intended use of this class is for the user to input critical points
+    that represent the track and then call the generate_track_list function
+    which will generate lists used for the simulation.
+
+    THE HIGHEST distance_from_start_finish VALUE IS USED AS THE END
+    OF THE TRACK DISTANCE
+
     """
-    def __init__(self, velocity_list, distance_list, lap_time, air_density):
-        self.velocity_list = velocity_list
-        self.distance_list = distance_list
-        self.lap_time = lap_time
+    def __init__(self, air_density):
         self.air_density = air_density
 
-    def add_critical_point(distance_from_start_finish, type, value)
-        this function must accept the critical point and put it in a list
-        in the correct distance position (must sort)
-        type = type of critical point (max velocity or turn radius)
-        value = value with type "type" for the critical point
+        self._critical_point_dict = {}
 
-def generate_track_list(track_properties: TrackProperties, delta_distance):
-    """Function for generating a list that represents the track properties
-    and car constraints at every delta_distance interval around the track.
+        # lists for using in the simulation later
+        self.distance_list = []
+        self.velocity_constraint_list = []
+        self.max_velocity_list = []
 
-    Args:
-        track_properties (TrackProperties): A list of critical track points
-        delta_distance (double): distance interval at which to generate the list (meters)
-    
-    Returns:
-        track_list (tuple): tuple that contains all track properties and car constraints
-            at each delta distance inverval over the entire track 
-            TODO: needs concrete definition
-    
-    Raises:
-        Nothing
-    """
+        # Constants
+        self.FREE_ACCELERATION = "free"
+        self.LINEAR_ACCELERATION = "linear"
+        self.CONSTANT_ACCELERATION = "constant"
 
-    This needs to start at 0 distance, increment at delta distance and make a tuple
-    that has all the track characteristics in it. It looks at the critical points
-    in the list. It assumes that the critical points are in distance order
+    def add_critical_point(self, distance_from_start_finish,
+                           max_velocity, velocity_constraint):
+        """Function that adds points to the critical_point_dict.
+        It sorts the critical points by distance from start finish.
 
+        Args:
+            distance_from_start_finish (float): distance from the start
+                                                finish line of the critical point (meters)
+            max_velocity (float): maximum allowable velocity at that point in the track (meters/second)
+            velocity_constraint (string): type of velocity constraint, "free" "linear" or "constant"
 
-    return track_list
+        Returns:
+            Nothing
 
+        Raises:
+            Nothing
+
+        """
+
+        self._critical_point_dict[distance_from_start_finish] = (max_velocity,
+                                                                 velocity_constraint)
+
+    def generate_track_list(self, delta_distance):
+        """Function for generating a list that represents the track properties
+        and car constraints at every delta_distance interval around the track.
+
+        Args:
+            delta_distance (float): distance interval at which to generate the list (meters)
+
+        Returns:
+            Nothing
+
+        Raises:
+            Nothing
+        """
+
+        ordered_dict = collections.OrderedDict(self._critical_point_dict)
+
+        # This needs to start at 0 distance, increment at delta distance and make a tuple
+        # that has all the track characteristics in it. It looks at the critical points
+        # in the list. It assumes that the critical points are in distance order
+
+        max_velocity = 0
+        velocity_constraint = "free"
+
+        # highest distance value:
+        last_distance = next(reversed(ordered_dict))
+        print("last distance: {}".format(last_distance))
+
+        for x in numpy.arange(0, last_distance, delta_distance):
+            # update the max velocity and velocity constraint
+            try:
+                max_velocity, velocity_constraint = ordered_dict[x]
+            except KeyError:
+                pass
+
+            self.distance_list.append(x)
+            self.velocity_constraint_list.append(velocity_constraint)
+            self.max_velocity_list.append(max_velocity)
 
 # in meters/second
 test_track_max_velocity = [
