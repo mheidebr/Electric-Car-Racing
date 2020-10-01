@@ -50,7 +50,7 @@ def rotational_kinetic_energy_calculation(rotational_inertia, wheel_radius, velo
 
 
 def time_of_travel_calculation(velocity, distance):
-    return distance/velocity
+    return distance / velocity
 
 
 def free_acceleration_calculation(initial_velocity,
