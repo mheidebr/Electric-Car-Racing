@@ -40,8 +40,8 @@ class TrackProperties:
 
         # Constants
         self.FREE_ACCELERATION = "free"
-        self.LINEAR_ACCELERATION = "linear"
-        self.CONSTANT_ACCELERATION = "constant"
+        self.CONSTANT_ACCELERATION = "linear"
+        self.CONSTANT_VELOCITY = "constant"
 
     def add_critical_point(self, distance_from_start_finish,
                            max_velocity, velocity_constraint):

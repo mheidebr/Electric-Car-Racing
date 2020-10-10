@@ -166,25 +166,126 @@ def constrained_velocity_calculation(initial_velocity,
     Raises:
         (TODO) Some sort of error if the velocity constraints cannot be met
     """
-    output = PhysicsCalculationOutput()
     drag_force = drag_force_calculation(drag_coefficient,
                                         initial_velocity,
                                         air_density,
                                         frontal_area)
     drag_energy = drag_force * distance_of_travel
-    output.energy_differential_of_battery = drag_energy/motor_efficiency
 
-    output.final_velocity = final_velocity
-    output.distance_traveled = distance_of_travel
-    output.time_of_segment = distance_of_travel / ((final_velocity + initial_velocity) / 2)
+    final_velocity = final_velocity
+    distance_of_travel = distance_of_travel
 
-    return output
+    time_of_segment = distance_of_travel / ((final_velocity + initial_velocity) / 2)
+    energy_motor = drag_energy
+
+    acceleration = (final_velocity - initial_velocity) / time_of_segment
+
+    physics_results = PhysicsCalculationOutput(final_velocity, distance_of_travel,
+                                               time_of_segment, energy_motor, acceleration)
+
+    return physics_results
+
+
+def max_positive_power_physics_simulation(initial_velocity,
+                                          distance_of_travel,
+                                          car: ElectricCarProperties,
+                                          track: TrackProperties):
+    """Function that calculates a small portion of a lap
+    of a car with car_characteristics on a track with track_characteristics. The
+    car is applying maximum foward effort with the motor.
+
+    Args:
+        initial_velocity (float): initial velocity (m/s)
+        distance_of_travel (float): distance traveled for the calculation
+        car (ElectricCarProperties): Characteristics of car being simulated
+        track (TrackProperties): Characteristics of track being simulated
+
+    Returns:
+        results (PysicsSimultaionResults):  results of the simulation at index 'index'
+
+    """
+    results = free_acceleration_calculation(initial_velocity,
+                                            distance_of_travel,
+                                            car.motor_power,
+                                            car.motor_efficiency,
+                                            car.wheel_radius,
+                                            car.rotational_inertia,
+                                            car.mass,
+                                            car.drag_coefficient,
+                                            car.frontal_area,
+                                            track.air_density)
+    return results
+
+
+def max_negative_power_physics_simulation(initial_velocity,
+                                          distance_of_travel,
+                                          car: ElectricCarProperties,
+                                          track: TrackProperties):
+    """Function that calculates a small portion of a lap
+    of a car with car_characteristics on a track with track_characteristics. The
+    car is applying maximum braking effort with the motor.
+
+    Args:
+        initial_velocity (float): initial velocity (m/s)
+        distance_of_travel (float): distance traveled for the calculation
+        car (ElectricCarProperties): Characteristics of car being simulated
+        track (TrackProperties): Characteristics of track being simulated
+
+    Returns:
+        results (PysicsSimultaionResults):  results of the simulation at index 'index'
+
+    """
+    results = free_acceleration_calculation(initial_velocity,
+                                            distance_of_travel,
+                                            -car.motor_power,
+                                            car.motor_efficiency,
+                                            car.wheel_radius,
+                                            car.rotational_inertia,
+                                            car.mass,
+                                            car.drag_coefficient,
+                                            car.frontal_area,
+                                            track.air_density)
+    return results
+
+
+def constrained_velocity_physics_simulation(initial_velocity,
+                                            final_velocity,
+                                            distance_of_travel,
+                                            car: ElectricCarProperties,
+                                            track: TrackProperties):
+    """Function that calculates a small portion of a lap
+    of a car with car_characteristics on a track with track_characteristics.
+    For this method of simulation the car is on a constrained velocity profile
+
+    The strategy of this calculation is a middle reimann sum
+        - Drag energy is calculated using the average of initial and final velocity
+
+    Args:
+        initial_velocity (float): initial velocity (m/s)
+        final_velocity (float): initial velocity (m/s)
+        car_properties (ElectricCarProperties): Characteristics of car being simulated
+        track_properites (TrackProperties): Characteristics of track being simulated
+
+    Returns:
+        results (PysicsSimultaionResults):  results of the simulation at index 'index'
+
+    """
+
+    results = constrained_velocity_calculation(initial_velocity,
+                                               final_velocity,
+                                               distance_of_travel,
+                                               car.motor_efficiency,
+                                               car.drag_coefficient,
+                                               car.frontal_area,
+                                               track.air_density)
+    return results
 
 
 def physics_simulation(initial_velocity,
-                       index,
-                       car_properties: ElectricCarProperties,
-                       track_properties: TrackProperties):
+                       distance_of_travel,
+                       motor_power,
+                       car: ElectricCarProperties,
+                       track: TrackProperties):
     """Function that calculates a small portion of a lap
     of a car with car_characteristics on a track with track_characteristics.
 
@@ -192,7 +293,7 @@ def physics_simulation(initial_velocity,
         - Drag energy is calculated using the average of initial and final velocity
 
     Args:
-        initial_velocity (fload): initial velocity (m/s)
+        initial_velocity (float): initial velocity (m/s)
         index (float): index in the track lists for the calculation
         car_properties (ElectricCarProperties): Characteristics of car being simulated
         track_properites (TrackProperties): Characteristics of track being simulated
@@ -202,22 +303,26 @@ def physics_simulation(initial_velocity,
 
     """
 
-    distance_of_travel = (track_properties.distance_list[index + 1] -
-                          track_properties.distance_list[index])
-    
-    #there will eventually be more logic here to take into account what kind to acceleration needs
-    # to happen
+    if track.max_velocity_list[index] is track.FREE_ACCELERATION:
+        results = free_acceleration_calculation(initial_velocity,
+                                                distance_of_travel,
+                                                car.motor_power,
+                                                car.motor_efficiency,
+                                                car.wheel_radius,
+                                                car.rotational_inertia,
+                                                car.mass,
+                                                car.drag_coefficient,
+                                                car.frontal_area,
+                                                track.air_density)
 
-    # Do calculations here
-    results = free_acceleration_calculation(initial_velocity,
-                                            distance_of_travel,
-                                            car_properties.motor_power,
-                                            car_properties.motor_efficiency,
-                                            car_properties.wheel_radius,
-                                            car_properties.rotational_inertia,
-                                            car_properties.mass,
-                                            car_properties.drag_coefficient,
-                                            car_properties.frontal_area,
-                                            track_properties.air_density)
+    elif track.max_velocity_list[index] is track.CONSTANT_VELOCITY:
+        results = constrained_velocity_calculation(initial_velocity,
+                                                   initial_velocity,
+                                                   distance_of_travel,
+                                                   car.motor_efficiency,
+                                                   car.drag_coefficient,
+                                                   car.frontal_area,
+                                                   track.air_density)
+
 
     return results
