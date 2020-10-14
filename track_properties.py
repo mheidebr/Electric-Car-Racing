@@ -2,6 +2,10 @@
 
 import collections
 import numpy
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 
 class TrackProperties:

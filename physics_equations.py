@@ -3,7 +3,9 @@
 from math import sqrt
 from electric_car_properties import ElectricCarProperties
 from track_properties import TrackProperties
+import logging
 
+logger = logging.getLogger(__name__)
 
 class PhysicsCalculationOutput():
     """Class that contains the data
@@ -50,6 +52,7 @@ def rotational_kinetic_energy_calculation(rotational_inertia, wheel_radius, velo
 
 
 def time_of_travel_calculation(velocity, distance):
+    # print("time of travel calc, distance, velocity: {} {}".format(distance, velocity))
     return distance / velocity
 
 
@@ -281,48 +284,48 @@ def constrained_velocity_physics_simulation(initial_velocity,
     return results
 
 
-def physics_simulation(initial_velocity,
-                       distance_of_travel,
-                       motor_power,
-                       car: ElectricCarProperties,
-                       track: TrackProperties):
-    """Function that calculates a small portion of a lap
-    of a car with car_characteristics on a track with track_characteristics.
+# def physics_simulation(initial_velocity,
+#                        distance_of_travel,
+#                        motor_power,
+#                        car: ElectricCarProperties,
+#                        track: TrackProperties):
+#     """Function that calculates a small portion of a lap
+#     of a car with car_characteristics on a track with track_characteristics.
 
-    The strategy of this calculation is a middle reimann sum
-        - Drag energy is calculated using the average of initial and final velocity
+#     The strategy of this calculation is a middle reimann sum
+#         - Drag energy is calculated using the average of initial and final velocity
 
-    Args:
-        initial_velocity (float): initial velocity (m/s)
-        index (float): index in the track lists for the calculation
-        car_properties (ElectricCarProperties): Characteristics of car being simulated
-        track_properites (TrackProperties): Characteristics of track being simulated
+#     Args:
+#         initial_velocity (float): initial velocity (m/s)
+#         index (float): index in the track lists for the calculation
+#         car_properties (ElectricCarProperties): Characteristics of car being simulated
+#         track_properites (TrackProperties): Characteristics of track being simulated
 
-    Returns:
-        results (PysicsSimultaionResults):  results of the simulation at index 'index'
+#     Returns:
+#         results (PysicsSimultaionResults):  results of the simulation at index 'index'
 
-    """
+#     """
 
-    if track.max_velocity_list[index] is track.FREE_ACCELERATION:
-        results = free_acceleration_calculation(initial_velocity,
-                                                distance_of_travel,
-                                                car.motor_power,
-                                                car.motor_efficiency,
-                                                car.wheel_radius,
-                                                car.rotational_inertia,
-                                                car.mass,
-                                                car.drag_coefficient,
-                                                car.frontal_area,
-                                                track.air_density)
+#     if track.max_velocity_list[index] is track.FREE_ACCELERATION:
+#         results = free_acceleration_calculation(initial_velocity,
+#                                                 distance_of_travel,
+#                                                 car.motor_power,
+#                                                 car.motor_efficiency,
+#                                                 car.wheel_radius,
+#                                                 car.rotational_inertia,
+#                                                 car.mass,
+#                                                 car.drag_coefficient,
+#                                                 car.frontal_area,
+#                                                 track.air_density)
 
-    elif track.max_velocity_list[index] is track.CONSTANT_VELOCITY:
-        results = constrained_velocity_calculation(initial_velocity,
-                                                   initial_velocity,
-                                                   distance_of_travel,
-                                                   car.motor_efficiency,
-                                                   car.drag_coefficient,
-                                                   car.frontal_area,
-                                                   track.air_density)
+#     elif track.max_velocity_list[index] is track.CONSTANT_VELOCITY:
+#         results = constrained_velocity_calculation(initial_velocity,
+#                                                    initial_velocity,
+#                                                    distance_of_travel,
+#                                                    car.motor_efficiency,
+#                                                    car.drag_coefficient,
+#                                                    car.frontal_area,
+#                                                    track.air_density)
 
 
-    return results
+#     return results
