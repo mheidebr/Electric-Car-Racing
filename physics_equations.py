@@ -52,7 +52,7 @@ def rotational_kinetic_energy_calculation(rotational_inertia, wheel_radius, velo
 
 
 def time_of_travel_calculation(velocity, distance):
-    # print("time of travel calc, distance, velocity: {} {}".format(distance, velocity))
+    print("time of travel calc, distance, velocity: {} {}".format(distance, velocity))
     return distance / velocity
 
 
