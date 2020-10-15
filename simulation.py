@@ -18,85 +18,16 @@ from electric_car_properties import ElectricCarProperties
 from track_properties import TrackProperties
 
 from logging_config import configure_logging
+from data_store import (DataStore,
+                       RacingSimulationResults,
+                       LapVelocitySimulationResults,
+                       )
 
 
 def total_power_consumption(car, track):
     for i in range(len(track.distance_list)):
         # placeholder
         return 0
-
-
-class RacingSimulationResults():
-    def __init__(self):
-        self.laps_per_pit_stop = 0
-        self.lap_time = 0
-
-        self.lap_results = 0
-
-
-class LapVelocitySimulationResults():
-    def __init__(self, length, main_window):
-        """Class that contains the results of the simulation
-        over one lap.
-
-        Args:
-            length (int): length of output arrays, this should be the
-                          length of the track lists (ex: track.distance_list)
-        """
-        self.end_velocity = 0
-        self.lap_time = 0
-        self.time_profile = []
-        self.distance_profile = []
-        self.motor_power_profile = []
-        self.battery_power_profile = []
-        self.battery_energy_profile = []
-        self.acceleration_profile = []
-        self.velocity_profile = []
-        self.physics_results_list = []
-
-        self.main_window = main_window
-
-        for i in range(length):
-            self.time_profile.append(0)
-            self.distance_profile.append(0)
-            self.motor_power_profile.append(0)
-            self.battery_power_profile.append(0)
-            self.battery_energy_profile.append(0)
-            self.acceleration_profile.append(0)
-            self.velocity_profile.append(0)
-            self.physics_results_list.append(0)
-
-    def add_physics_results(self, physics_results, index):
-        """Function that inserts physics results at index: index
-        into the result arrays
-
-        Args:
-            physics_results (PhysicsResults): physics results to be inserted into results arrays
-            index (int): index at which the physics results should be inserted
-
-        """
-        self.physics_results_list[index] = physics_results
-
-        self.distance_profile[index] = (self.distance_profile[index - 1] +
-                                        physics_results.distance_traveled)
-        self.time_profile[index] = (self.time_profile[index - 1] +
-                                    physics_results.time_of_segment)
-        self.motor_power_profile[index] = physics_results.motor_power
-        self.battery_power_profile[index] = (physics_results.energy_differential_of_battery /
-                                             physics_results.time_of_segment)
-        self.battery_energy_profile[index] = (self.battery_energy_profile[index - 1] +
-                                              physics_results.energy_differential_of_battery)
-        self.acceleration_profile[index] = physics_results.acceleration
-        self.velocity_profile[index] = physics_results.final_velocity
-        print("Physics Results")
-        print(physics_simulation)
-
-        print("time_profile: {}".format(self.time_profile[index]))
-        print("distance_profile: {}".format(self.distance_profile[index]))
-        print("battery_energy_profile: {}".format(self.battery_energy_profile[index]))
-        time.sleep(0.5)
-
-        self.main_window.regraph(self.time_profile, self.distance_profile, self.velocity_profile)
 
 
 def racing_simulation(car: ElectricCarProperties,
@@ -126,7 +57,7 @@ def racing_simulation(car: ElectricCarProperties,
     return results
 
 
-def lap_velocity_simulation(initial_velocity,
+def lap_velocity_simulation(data_store,
                             car: ElectricCarProperties,
                             track: TrackProperties,
                             main_window):
@@ -146,10 +77,7 @@ def lap_velocity_simulation(initial_velocity,
 
     lap_results = LapVelocitySimulationResults(len(track.max_velocity_list), main_window)
 
-    velocity = copy(initial_velocity)
-
-    sim_index = 0
-    walk_back_index = 1
+    sim_index = data_store.get_simulation_index()
     # need to populate the time profile be the same length as the distance list
     # to complete a lap of simulation
     while sim_index < len(track.distance_list):
@@ -158,6 +86,7 @@ def lap_velocity_simulation(initial_velocity,
                                   track.distance_list[sim_index])
         except IndexError:
             print("index error: {}".format(track.distance_list[sim_index]))
+        velocity = data_store.get_velocity()
         physics_results = max_positive_power_physics_simulation(velocity,
                                                                 distance_of_travel,
                                                                 car,
@@ -180,7 +109,9 @@ def lap_velocity_simulation(initial_velocity,
                     - if the results are not realistic then increment the
                       walk back counter and recalculate
                 """
-                for i in range((sim_index - walk_back_index), (sim_index - 1)):
+                walk_back_counter = data_store.get_walk_back_counter()
+                sim_index = data_store.get_simulation_index()
+                for i in range((sim_index - walk_back_counter), (sim_index - 1)):
                     velocity = lap_results.velocity_profile[i - 1]
                     # recalculate with negative motor power
                     results = max_negative_power_physics_simulation(velocity,
@@ -200,15 +131,15 @@ def lap_velocity_simulation(initial_velocity,
                 # check if constrained velocity calculation is realistic
                 # TODO other checks here can be on acceleration or wheel force
                 if abs(physics_results.motor_power) > abs(car.motor_power):
-                    walk_back_index += 1
+                    data_store.increment_walk_back_counter()
                 else:
                     lap_results.add_physics_results(results, sim_index)
 
             # reset walk back index
-            walk_back_index = 1
+            data_store.reset_walk_back_counter()
 
-        velocity = lap_results.velocity_profile[sim_index]
-        sim_index += 1
+        data_store.set_velocity(lap_results.velocity_profile[sim_index])
+        data_store.increment_simulation_index()
 
     return lap_results
 
@@ -233,12 +164,12 @@ def main():
 
     configure_logging()
 
+    data_store = DataStore()
+
     app = QtWidgets.QApplication(sys.argv)
 
     main_window = MainWindow()
     main_window.show()
-
-    initial_velocity = 40  # m/s
 
     segment_distance = 0.01  # 1cm
     battery_power = 40000  # 40kW
@@ -263,7 +194,7 @@ def main():
                                 frontal_area=frontal_area, wheel_radius=wheel_radius)
 
     # 1. generate results
-    racing_results = racing_simulation(car, track, main_window)
+    racing_results = racing_simulation(data_store, car, track, main_window)
 
     # 3. display results
     sys.exit(app.exec_())
