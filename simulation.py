@@ -8,6 +8,7 @@ from PyQt5 import QtWidgets
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 from copy import deepcopy, copy
+import threading
 
 
 from physics_equations import (max_negative_power_physics_simulation,
@@ -18,19 +19,16 @@ from electric_car_properties import ElectricCarProperties
 from track_properties import TrackProperties
 
 from logging_config import configure_logging
-from data_store import (DataStore,
+from datastore import (DataStore,
                        RacingSimulationResults,
                        LapVelocitySimulationResults,
                        )
 
-
-def total_power_consumption(car, track):
-    for i in range(len(track.distance_list)):
-        # placeholder
-        return 0
+logger = logging.getLogger(__name__)
 
 
-def racing_simulation(car: ElectricCarProperties,
+def racing_simulation(data_store,
+                      car: ElectricCarProperties,
                       track: TrackProperties,
                       main_window):
     """Function accepts a car and a track and executes
@@ -47,9 +45,7 @@ def racing_simulation(car: ElectricCarProperties,
     """
     results = RacingSimulationResults()
 
-    initial_velocity = 3
-
-    lap_results = lap_velocity_simulation(initial_velocity, car, track, main_window)
+    lap_results = lap_velocity_simulation(data_store, car, track, main_window)
     results.laps_per_pit_stop = car.battery_capacity / lap_results.battery_energy_profile[-1]
     results.lap_time = lap_results.end_velocity
     results.lap_results = lap_results
@@ -84,8 +80,9 @@ def lap_velocity_simulation(data_store,
         try:
             distance_of_travel = (track.distance_list[sim_index + 1] -
                                   track.distance_list[sim_index])
-        except IndexError:
-            print("index error: {}".format(track.distance_list[sim_index]))
+        except IndexError as e:
+            logger.error("index error: {}\n{}".format(track.distance_list[sim_index], e),
+            extra={'sim_index': sim_index})
         velocity = data_store.get_velocity()
         physics_results = max_positive_power_physics_simulation(velocity,
                                                                 distance_of_travel,
@@ -96,6 +93,9 @@ def lap_velocity_simulation(data_store,
         if physics_results.final_velocity > track.max_velocity_list[sim_index]:
             # velocity constraint violated!!
             # start walking back until velocity constraint at sim_index is met
+            logger.info("velocity constraint violated starting walk back, current v: {}, max: {}"
+                        .format(physics_results.final_velocity, track.max_velocity_list[sim_index]),
+                        extra={'sim_index': data_store.get_simulation_index()})
             while lap_results.velocity_profile[sim_index] > track.max_velocity_list[sim_index]:
                 """This while loop's pupose is to recalculate a portion of the
                 car's car profile because the car ended up going to fast at a point on the
@@ -111,6 +111,11 @@ def lap_velocity_simulation(data_store,
                 """
                 walk_back_counter = data_store.get_walk_back_counter()
                 sim_index = data_store.get_simulation_index()
+                recalculation_start_index = sim_index - walk_back_counter
+                recalculation_end_index = sim_index - 1
+                logger.info("starting and ending walkback index: {}, {}"
+                            .format(recalculation_start_index, recalculation_end_index),
+                            extra={'sim_index': data_store.get_simulation_index()})
                 for i in range((sim_index - walk_back_counter), (sim_index - 1)):
                     velocity = lap_results.velocity_profile[i - 1]
                     # recalculate with negative motor power
@@ -131,8 +136,16 @@ def lap_velocity_simulation(data_store,
                 # check if constrained velocity calculation is realistic
                 # TODO other checks here can be on acceleration or wheel force
                 if abs(physics_results.motor_power) > abs(car.motor_power):
+                    logger.info("velocity constraint still violated, calculated power: {}, max power: {}"
+                                .format(physics_results.motor_power, car.motor_power),
+                                extra={'sim_index': data_store.get_simulation_index()})
+                    logger.info("sim_index, walkback: {} {}, incrementing walk back"
+                                .format(sim_index, walk_back_counter),
+                                extra={'sim_index': data_store.get_simulation_index()})
                     data_store.increment_walk_back_counter()
                 else:
+                    logger.info("constrained velocity equation accepted",
+                                extra={'sim_index': data_store.get_simulation_index()})
                     lap_results.add_physics_results(results, sim_index)
 
             # reset walk back index
@@ -160,11 +173,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
 # rotational inertia estimation: http://www.hpwizard.com/rotational-inertia.html
 def main():
-    logger = logging.getLogger(__name__)
-
-    configure_logging()
 
     data_store = DataStore()
+
+    configure_logging(data_store)
 
     app = QtWidgets.QApplication(sys.argv)
 
