@@ -1,5 +1,6 @@
 """Location to store data for the system."""
 import logging
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -20,49 +21,61 @@ class DataStore:
         self._walk_back_counter = 0
         self._velocity = 1
 
+        self._simulation_index_lock = threading.Lock()
+        self._walk_back_counter_lock = threading.Lock()
+        self._velocity_lock = threading.Lock()
+
     def get_simulation_index(self):
-        return self._simulation_index
+        with self._simulation_index_lock:
+            return self._simulation_index
 
     def get_velocity(self):
-        return self._velocity
+        with self._velocity_lock:
+            return self._velocity
 
     def get_walk_back_counter(self):
-        return self._walk_back_counter
+        with self._walk_back_counter_lock:
+            return self._walk_back_counter
 
     def increment_simulation_index(self):
-        temp = self._simulation_index
-        self._simulation_index += 1
-        logger.debug("index updated to {} from {}".format(self._simulation_index,
-                                                          temp))
+        with self._simulation_index_lock:
+            temp = self._simulation_index
+            self._simulation_index += 1
+            logger.debug("index updated to {} from {}".format(self._simulation_index,
+                                                            temp))
 
     def decrement_simulation_index(self):
-        if self._simulation_index < 0:
-            temp = self._simulation_index
-            self._simulation_index -= 1
-            logger.debug("index updated to {} from {}".format(self._simulation_index,
-                                                              temp))
-        # index must be more than or equal to 0
-        else:
-            logger.warning("index at {} and decremented, not allowed".format(self._simulation_index))
+        with self._simulation_index_lock:
+            if self._simulation_index < 0:
+                temp = self._simulation_index
+                self._simulation_index -= 1
+                logger.debug("index updated to {} from {}".format(self._simulation_index,
+                                                                temp))
+            # index must be more than or equal to 0
+            else:
+                logger.warning("index at {} and decremented, not allowed".format(self._simulation_index))
 
     def increment_walk_back_counter(self):
-        temp = self._walk_back_counter
-        self._walk_back_counter += 1
-        logger.debug("walk_back_counter updated to {} from {}".format(self._walk_back_counter,
-                                                                      temp))
+        with self._walk_back_counter_lock:
+            temp = self._walk_back_counter
+            self._walk_back_counter += 1
+            logger.debug("walk_back_counter updated to {} from {}".format(self._walk_back_counter,
+                                                                        temp))
 
     def reset_walk_back_counter(self):
-        temp = self._walk_back_counter
-        self._walk_back_counter = 1
-        logger.debug("walk_back_counter updated to {} from {}".format(self._walk_back_counter,
-                                                                      temp))
+        with self._walk_back_counter_lock:
+            temp = self._walk_back_counter
+            self._walk_back_counter = 1
+            logger.debug("walk_back_counter updated to {} from {}".format(self._walk_back_counter,
+                                                                        temp))
 
     def set_velocity(self, new_velocity):
         if new_velocity >= 0:
-            temp = self._velocity
-            self._velocity = new_velocity
-            logger.debug("velocity updated to {} from {}".format(self._velocity,
-                                                                 temp))
+            with self._velocity_lock:
+                temp = self._velocity
+                self._velocity = new_velocity
+                logger.debug("velocity updated to {} from {}".format(self._velocity,
+                                                                    temp))
         else:
             logger.warning("invalid new_velocity input, must be > 0: {}".format(new_velocity))
 
