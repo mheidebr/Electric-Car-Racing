@@ -4,6 +4,7 @@ import sys
 import os
 import time
 import logging
+import threading
 from PyQt5 import QtWidgets
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
@@ -34,7 +35,7 @@ def total_power_consumption(car, track):
 
 def racing_simulation(car: ElectricCarProperties,
                       track: TrackProperties,
-                      main_window):
+                      ):
     """Function accepts a car and a track and executes
     a simulation to ouput critical metrics related
     to battery life and track speed.
@@ -60,7 +61,7 @@ def racing_simulation(car: ElectricCarProperties,
 def lap_velocity_simulation(data_store,
                             car: ElectricCarProperties,
                             track: TrackProperties,
-                            main_window):
+                            ):
     """Function calculates the velocity profile of a car with
     car_properties on a track with track_properties. The car
     starts with an ititial velocity of initial_velocity.
@@ -75,7 +76,7 @@ def lap_velocity_simulation(data_store,
         results (LapVelocitySimulationResults): output of the lap simulation
     """
 
-    lap_results = LapVelocitySimulationResults(len(track.max_velocity_list), main_window)
+    lap_results = LapVelocitySimulationResults(len(track.max_velocity_list))
 
     sim_index = data_store.get_simulation_index()
     # need to populate the time profile be the same length as the distance list
@@ -160,6 +161,23 @@ def lap_velocity_simulation(data_store,
 
     return lap_results
 
+class VisualizationThread(threading.thread):
+    """Wrapper class for running the visualization part of
+    the simulation.
+
+    """
+
+    def __init__(self, data_store, exit_event):
+        super().__init__(daemon=True, *args, **kwargs)
+        self._data_store = data_store
+        self._exit_event = exit_event
+        self._display_window = MainWindow()
+
+    def run():
+        while not self._exit_event.is_set():
+            time.sleep(1.0)
+            self._display_window.regraph(self._data_store.get)
+
 
 class MainWindow(QtWidgets.QMainWindow):
 
@@ -169,7 +187,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graphWidget = pg.PlotWidget()
         self.setCentralWidget(self.graphWidget)
 
-    def regraph(self, time, distance, velocity):
+
+    def regraph(self, time_list, distance, velocity):
         # plot data: x, y values
         self.graphWidget.plot(time, distance)
         self.graphWidget.plot(time, velocity)
@@ -206,13 +225,25 @@ def main():
     track.add_critical_point(2000, 100, track.FREE_ACCELERATION)
     track.generate_track_list(segment_distance)
 
+    data_store.initialize_lap_profiles(len(track.distance_list))
+
     car = ElectricCarProperties(mass=mass, rotational_inertia=rotational_inertia,
                                 motor_power=battery_power, motor_efficiency=motor_efficiency,
                                 battery_capacity=10, drag_coefficient=drag_coefficient,
                                 frontal_area=frontal_area, wheel_radius=wheel_radius)
 
+    # define run method for each thread target
+
+    # create threads
+    # create exit condition
+    # start threads
+    # while(1)
+    # except keyboard interrupt
+    # close things down
+
+
     # 1. generate results
-    racing_results = racing_simulation(data_store, car, track, main_window)
+    racing_results = racing_simulation(data_store, car, track)
 
     # 3. display results
     sys.exit(app.exec_())
