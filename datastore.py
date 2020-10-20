@@ -1,6 +1,8 @@
 """Location to store data for the system."""
 import logging
 import threading
+import track_properties
+import electric_car_properties
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +15,9 @@ class DataStore:
 
     def __init__(self):
 
-        self.cars = []
-        self.tracks = []
+        self.cars = electric_car_properties.ElectricCarProperties()
+        self._track_profile = track_properties.TrackProperties()
+        self._lap_simulation_results = LapVelocitySimulationResults()
 
         # index to do the simulations
         self._simulation_index = 0
@@ -79,6 +82,16 @@ class DataStore:
         else:
             logger.warning("invalid new_velocity input, must be > 0: {}".format(new_velocity))
 
+    def initialize_lap_profiles(self, length):
+        self._lap_simulation_results.initialize_profiles(length)
+    
+    def get_lap_velocity_profile():
+
+    def get_lap_time_profile():
+
+    def get_track_distance_profile():
+
+
 
 class RacingSimulationResults():
     def __init__(self):
@@ -89,7 +102,7 @@ class RacingSimulationResults():
 
 
 class LapVelocitySimulationResults():
-    def __init__(self, length, main_window):
+    def __init__(self):
         """Class that contains the results of the simulation
         over one lap.
 
@@ -108,7 +121,19 @@ class LapVelocitySimulationResults():
         self.velocity_profile = []
         self.physics_results_list = []
 
-        self.main_window = main_window
+    def initialize_profiles(self, length):
+        """Function to initialize the profile lists after after
+        the initialization of the datastore.
+        """
+
+        self.time_profile = []
+        self.distance_profile = []
+        self.motor_power_profile = []
+        self.battery_power_profile = []
+        self.battery_energy_profile = []
+        self.acceleration_profile = []
+        self.velocity_profile = []
+        self.physics_results_list = []
 
         for i in range(length):
             self.time_profile.append(0)
@@ -149,5 +174,3 @@ class LapVelocitySimulationResults():
         print("distance_profile: {}".format(self.distance_profile[index]))
         print("battery_energy_profile: {}".format(self.battery_energy_profile[index]))
         time.sleep(0.5)
-
-        self.main_window.regraph(self.time_profile, self.distance_profile, self.velocity_profile)

@@ -5,9 +5,21 @@ logger = logging.getLogger(__name__)
 
 # Make sure all units match! All units should be SI
 class ElectricCarProperties:
-    def __init__(self, mass, rotational_inertia, motor_power, motor_efficiency,
-                 battery_capacity, drag_coefficient, frontal_area,
-                 wheel_radius):
+    def __init__(self):
+            self._properties_set = False
+            self.mass = 0
+            self.rotational_inertia = 0
+            self.motor_power = 0
+            self.motor_efficiency = 0
+            self.battery_capacity = 0
+            self.drag_coefficient = 0
+            self.frontal_area = 0
+            self.wheel_radius = 0
+        
+    def set_car_parameters(self, mass, rotational_inertia, motor_power, motor_efficiency,
+                           battery_capacity, drag_coefficient, frontal_area,
+                           wheel_radius):
+      
         if mass <= 0:
             raise Exception("Invalid Mass {}".format(mass))
         elif rotational_inertia <=0:
@@ -26,11 +38,20 @@ class ElectricCarProperties:
         elif wheel_radius <= 0:
             raise Exception("Invalid wheel_radius {}".format(wheel_radius))
         else:
-            self.mass = mass
-            self.rotational_inertia = rotational_inertia
-            self.motor_power = motor_power
-            self.motor_efficiency = motor_efficiency
-            self.battery_capacity = battery_capacity
-            self.drag_coefficient = drag_coefficient
-            self.frontal_area = frontal_area
-            self.wheel_radius = wheel_radius
+            self._mass = mass
+            self._rotational_inertia = rotational_inertia
+            self._motor_power = motor_power
+            self._motor_efficiency = motor_efficiency
+            self._battery_capacity = battery_capacity
+            self._drag_coefficient = drag_coefficient
+            self._frontal_area = frontal_area
+            self._wheel_radius = wheel_radius
+            self._properties_set = True
+    
+    def get_mass():
+        if self._propserties_set:
+            return self.mass
+        else:
+            logger.error("Properties Not Set Yet!",)
+
+

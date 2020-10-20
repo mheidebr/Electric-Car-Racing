@@ -29,8 +29,8 @@ class TrackProperties:
     OF THE TRACK DISTANCE
 
     """
-    def __init__(self, air_density):
-        self.air_density = air_density
+    def __init__(self):
+        self._air_density = 1
 
         self._critical_point_dict = {}
 
@@ -43,6 +43,12 @@ class TrackProperties:
         self.FREE_ACCELERATION = "free"
         self.CONSTANT_ACCELERATION = "linear"
         self.CONSTANT_VELOCITY = "constant"
+
+    def set_air_density(self, air_density):
+        self._air_density = air_density
+
+    def get_air_density(self):
+        return self._air_density
 
     def add_critical_point(self, distance_from_start_finish,
                            max_velocity, velocity_constraint):
