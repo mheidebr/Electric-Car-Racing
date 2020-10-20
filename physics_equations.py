@@ -79,6 +79,7 @@ def time_of_travel_calculation(velocity, distance):
     return time_of_travel
 
 
+
 def free_acceleration_calculation(initial_velocity,
                                   distance_of_travel,
                                   motor_power,

@@ -20,6 +20,7 @@ from track_properties import TrackProperties
 
 from logging_config import configure_logging
 from datastore import (DataStore,
+
                        RacingSimulationResults,
                        LapVelocitySimulationResults,
                        )
@@ -80,7 +81,7 @@ def lap_velocity_simulation(data_store,
         try:
             distance_of_travel = (track.distance_list[sim_index + 1] -
                                   track.distance_list[sim_index])
-        except IndexError as e:
+      except IndexError as e:
             logger.error("index error: {}\n{}".format(track.distance_list[sim_index], e),
             extra={'sim_index': sim_index})
         velocity = data_store.get_velocity()
@@ -116,6 +117,7 @@ def lap_velocity_simulation(data_store,
                 logger.info("starting and ending walkback index: {}, {}"
                             .format(recalculation_start_index, recalculation_end_index),
                             extra={'sim_index': data_store.get_simulation_index()})
+
                 for i in range((sim_index - walk_back_counter), (sim_index - 1)):
                     velocity = lap_results.velocity_profile[i - 1]
                     # recalculate with negative motor power
@@ -177,6 +179,8 @@ def main():
     data_store = DataStore()
 
     configure_logging()
+
+    data_store = DataStore()
 
     app = QtWidgets.QApplication(sys.argv)
 
