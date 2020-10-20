@@ -30,30 +30,53 @@ class PhysicsCalculationOutput():
 
 
 def rotational_inertia_calculation(rotational_mass, effective_radius):
-    return rotational_mass * (effective_radius ** 2)
+    rotational_inertia = rotational_mass * (effective_radius ** 2)
+    logger.debug("rotational inertia, {}, rot mass, {}, effective radius, {}"
+                 .format(rotational_inertia, rotational_mass, effective_radius),
+                 extra={'sim_index': 'N/A'})
+    return rotational_inertia
 
 
 # Copied from here: https://en.wikipedia.org/wiki/Drag_(physics)
 def drag_force_calculation(coefficient_drag, velocity, air_density, frontal_area):
-    return 0.5*air_density*(velocity ** 2) * coefficient_drag * frontal_area
+    drag_force = 0.5*air_density*(velocity ** 2) * coefficient_drag * frontal_area
+    logger.debug("drag force, {}, air_density, {}, velocity, {}, coef of drag, {}, frontal area, {}"
+                 .format(drag_force, air_density, velocity, coefficient_drag, frontal_area),
+                 extra={'sim_index': 'N/A'})
+    return drag_force
 
 
 # Kinetic energy change from velocity_start to velocity_end of and object with mass
-def kinetic_energy_change(velocity_end, velocity_start, mass):
-    return 0.5*mass*(velocity_end ** 2 - velocity_start ** 2)
+def kinetic_energy_change_calculation(velocity_end, velocity_start, mass):
+    kinetic_energy_change = 0.5*mass*(velocity_end ** 2 - velocity_start ** 2)
+    logger.debug("kinetic energy change, {}, mass, {}, v_end, {}, v_start, {}"
+                 .format(kinetic_energy_change, mass, velocity_end, velocity_start),
+                 extra={'sim_index': 'N/A'})
+    return kinetic_energy_change
 
 
 def kinetic_energy_calculation(mass, velocity):
-    return 0.5 * mass * (velocity ** 2)
+    kinetic_energy = 0.5 * mass * (velocity ** 2)
+    logger.debug("kinetic energy, {}, mass, {}, velocity, {}"
+                 .format(kinetic_energy, mass, velocity),
+                 extra={'sim_index': 'N/A'})
+    return kinetic_energy
 
 
 def rotational_kinetic_energy_calculation(rotational_inertia, wheel_radius, velocity):
-    return 0.5 * rotational_inertia * ((velocity/wheel_radius) ** 2)
+    rotational_kinetic_energy = 0.5 * rotational_inertia * ((velocity/wheel_radius) ** 2)
+    logger.debug("rotation kinetic energy, {}, rotational inertia, {}, velocity, {}, wheel_radius, {}"
+                 .format(rotational_kinetic_energy, rotational_inertia, velocity, wheel_radius),
+                 extra={'sim_index': 'N/A'})
+    return rotational_kinetic_energy
 
 
 def time_of_travel_calculation(velocity, distance):
-    print("time of travel calc, distance, velocity: {} {}".format(distance, velocity))
-    return distance / velocity
+    time_of_travel = distance / velocity
+    logger.debug("time of travel, {}, distance, {}, velocity, {}"
+                 .format(time_of_travel, distance, velocity),
+                 extra={'sim_index': 'N/A'})
+    return time_of_travel
 
 
 def free_acceleration_calculation(initial_velocity,
@@ -125,12 +148,25 @@ def free_acceleration_calculation(initial_velocity,
     final_velocity = sqrt(energy_sum /
                           final_kinetic_energy_term)
 
+    final_linear_kinetic_energy = kinetic_energy_calculation(mass, final_velocity)
+    final_rotational_kinetic_energy = \
+        rotational_kinetic_energy_calculation(rotational_inertia, wheel_radius, final_velocity)
+
     # TODO MH Add in a check that the actual drag losses using the final velocity wouldn't be XX percent
     # different than the calculated one, if it would be then redo calc with smaller distance traveled
     # or solve with a system of equations
 
     # time_of_segment = distance_of_travel / ((final_velocity + initial_velocity) / 2)
     acceleration = (final_velocity - initial_velocity) / time_of_segment
+
+    logger.debug("acc, {}, final_v, {}, initial_v, {}, time, {}, distance, {}"
+                 .format(acceleration, final_velocity, initial_velocity,
+                         time_of_segment, distance_of_travel),
+                 extra={'sim_index': 'N/A'})
+    logger.debug("final linear e, {}, init linear e, {}, final rot e, {}, init rot e, {}"
+                 .format(final_linear_kinetic_energy, initial_linear_kinetic_energy,
+                         final_rotational_kinetic_energy, initial_rotational_kinetic_energy),
+                 extra={'sim_index': 'N/A'})
 
     physics_results = PhysicsCalculationOutput(final_velocity, distance_of_travel,
                                                time_of_segment, energy_motor, acceleration)
@@ -142,6 +178,9 @@ def constrained_velocity_calculation(initial_velocity,
                                      final_velocity,
                                      distance_of_travel,
                                      motor_efficiency,
+                                     rotational_inertia,
+                                     mass,
+                                     wheel_radius,
                                      drag_coefficient,
                                      frontal_area,
                                      air_density):
@@ -169,19 +208,37 @@ def constrained_velocity_calculation(initial_velocity,
     Raises:
         (TODO) Some sort of error if the velocity constraints cannot be met
     """
+
+    time_of_segment = distance_of_travel / ((final_velocity + initial_velocity) / 2)
+
+    acceleration = (final_velocity - initial_velocity) / time_of_segment
+
     drag_force = drag_force_calculation(drag_coefficient,
                                         initial_velocity,
                                         air_density,
                                         frontal_area)
     drag_energy = drag_force * distance_of_travel
 
-    final_velocity = final_velocity
-    distance_of_travel = distance_of_travel
+    initial_linear_kinetic_energy = kinetic_energy_calculation(mass, initial_velocity)
+    initial_rotational_kinetic_energy = \
+        rotational_kinetic_energy_calculation(rotational_inertia, wheel_radius, initial_velocity)
 
-    time_of_segment = distance_of_travel / ((final_velocity + initial_velocity) / 2)
-    energy_motor = drag_energy
+    final_linear_kinetic_energy = kinetic_energy_calculation(mass, final_velocity)
+    final_rotational_kinetic_energy = \
+        rotational_kinetic_energy_calculation(rotational_inertia, wheel_radius, final_velocity)
 
-    acceleration = (final_velocity - initial_velocity) / time_of_segment
+    energy_motor = (final_rotational_kinetic_energy + final_linear_kinetic_energy -
+                    initial_rotational_kinetic_energy - initial_linear_kinetic_energy
+                    + drag_energy)
+
+    logger.debug("acc, {}, final_v, {}, initial_v, {}, time, {}, distance, {}"
+                 .format(acceleration, final_velocity, initial_velocity,
+                         time_of_segment, distance_of_travel),
+                 extra={'sim_index': 'N/A'})
+    logger.debug("final linear e, {}, init linear e, {}, final rot e, {}, init rot e, {}"
+                 .format(final_linear_kinetic_energy, initial_linear_kinetic_energy,
+                         final_rotational_kinetic_energy, initial_rotational_kinetic_energy),
+                 extra={'sim_index': 'N/A'})
 
     physics_results = PhysicsCalculationOutput(final_velocity, distance_of_travel,
                                                time_of_segment, energy_motor, acceleration)
@@ -207,6 +264,8 @@ def max_positive_power_physics_simulation(initial_velocity,
         results (PysicsSimultaionResults):  results of the simulation at index 'index'
 
     """
+    logger.debug("Max Positive Power Calculation",
+                 extra={'sim_index': 'N/A'})
     results = free_acceleration_calculation(initial_velocity,
                                             distance_of_travel,
                                             car.motor_power,
@@ -238,6 +297,8 @@ def max_negative_power_physics_simulation(initial_velocity,
         results (PysicsSimultaionResults):  results of the simulation at index 'index'
 
     """
+    logger.debug("",
+                 extra={'sim_index': 'N/A'})
     results = free_acceleration_calculation(initial_velocity,
                                             distance_of_travel,
                                             -car.motor_power,
@@ -273,7 +334,8 @@ def constrained_velocity_physics_simulation(initial_velocity,
         results (PysicsSimultaionResults):  results of the simulation at index 'index'
 
     """
-
+    logger.debug("",
+                 extra={'sim_index': 'N/A'})
     results = constrained_velocity_calculation(initial_velocity,
                                                final_velocity,
                                                distance_of_travel,
@@ -282,50 +344,3 @@ def constrained_velocity_physics_simulation(initial_velocity,
                                                car.frontal_area,
                                                track.air_density)
     return results
-
-
-# def physics_simulation(initial_velocity,
-#                        distance_of_travel,
-#                        motor_power,
-#                        car: ElectricCarProperties,
-#                        track: TrackProperties):
-#     """Function that calculates a small portion of a lap
-#     of a car with car_characteristics on a track with track_characteristics.
-
-#     The strategy of this calculation is a middle reimann sum
-#         - Drag energy is calculated using the average of initial and final velocity
-
-#     Args:
-#         initial_velocity (float): initial velocity (m/s)
-#         index (float): index in the track lists for the calculation
-#         car_properties (ElectricCarProperties): Characteristics of car being simulated
-#         track_properites (TrackProperties): Characteristics of track being simulated
-
-#     Returns:
-#         results (PysicsSimultaionResults):  results of the simulation at index 'index'
-
-#     """
-
-#     if track.max_velocity_list[index] is track.FREE_ACCELERATION:
-#         results = free_acceleration_calculation(initial_velocity,
-#                                                 distance_of_travel,
-#                                                 car.motor_power,
-#                                                 car.motor_efficiency,
-#                                                 car.wheel_radius,
-#                                                 car.rotational_inertia,
-#                                                 car.mass,
-#                                                 car.drag_coefficient,
-#                                                 car.frontal_area,
-#                                                 track.air_density)
-
-#     elif track.max_velocity_list[index] is track.CONSTANT_VELOCITY:
-#         results = constrained_velocity_calculation(initial_velocity,
-#                                                    initial_velocity,
-#                                                    distance_of_travel,
-#                                                    car.motor_efficiency,
-#                                                    car.drag_coefficient,
-#                                                    car.frontal_area,
-#                                                    track.air_density)
-
-
-#     return results

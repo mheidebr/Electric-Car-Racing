@@ -34,6 +34,3 @@ class ElectricCarProperties:
             self.drag_coefficient = drag_coefficient
             self.frontal_area = frontal_area
             self.wheel_radius = wheel_radius
-            logger.debug("debug car")
-            logger.warning("warning car")
-            logger.critical("critical car")

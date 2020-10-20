@@ -2,8 +2,7 @@ import logging
 import logging.handlers
 import os
 import time
-
-LOG_FILE_SIZE = 1024 * 1024 * 2  # 2MB
+import datastore
 
 
 def configure_logging():
@@ -18,10 +17,10 @@ def configure_logging():
     logger = logging.getLogger()
     logger.setLevel(logging.DEBUG)
 
-    formatter = logging.Formatter('{levelname:.1s}, {message}, {funcName}, {module}', style='{',)
+    formatter = logging.Formatter('{levelname:.1s}, {sim_index}, {message}, {funcName}, {module}', style='{',)
 
     consoleHandler = logging.StreamHandler()
-    consoleHandler.setLevel(logging.DEBUG)
+    consoleHandler.setLevel(logging.INFO)
 
     consoleHandler.setFormatter(formatter)
 
@@ -29,6 +28,6 @@ def configure_logging():
 
     fileHandler = logging.FileHandler('example.log')
     fileHandler.setFormatter(formatter)
-    fileHandler.setLevel(logging.WARNING)
+    fileHandler.setLevel(logging.INFO)
 
     logger.addHandler(fileHandler)

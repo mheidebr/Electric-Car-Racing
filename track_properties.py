@@ -1,11 +1,8 @@
-#! /usr/bin/python3
-
 import collections
 import numpy
 import logging
 
 logger = logging.getLogger(__name__)
-
 
 
 class TrackProperties:
@@ -66,6 +63,9 @@ class TrackProperties:
 
         """
 
+        logger.debug("added critical point, distance: {}, max_velocity: {}, velocity_constraint: {}"
+                     .format(distance_from_start_finish, max_velocity, velocity_constraint),
+                     extra={'sim_index': 'N/A'})
         self._critical_point_dict[distance_from_start_finish] = (max_velocity,
                                                                  velocity_constraint)
 
@@ -94,7 +94,8 @@ class TrackProperties:
 
         # highest distance value:
         last_distance = next(reversed(ordered_dict))
-        print("last distance: {}".format(last_distance))
+        logger.debug("last distance: {}".format(last_distance),
+                     extra={'sim_index': 'N/A'})
 
         for x in numpy.arange(0, last_distance, delta_distance):
             # update the max velocity and velocity constraint
