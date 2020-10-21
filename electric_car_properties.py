@@ -6,23 +6,16 @@ logger = logging.getLogger(__name__)
 # Make sure all units match! All units should be SI
 class ElectricCarProperties:
     def __init__(self):
-            self._properties_set = False
-            self.mass = 0
-            self.rotational_inertia = 0
-            self.motor_power = 0
-            self.motor_efficiency = 0
-            self.battery_capacity = 0
-            self.drag_coefficient = 0
-            self.frontal_area = 0
-            self.wheel_radius = 0
-        
+        self._properties_set = False
+        self._car_parameters = {}
+
     def set_car_parameters(self, mass, rotational_inertia, motor_power, motor_efficiency,
                            battery_capacity, drag_coefficient, frontal_area,
                            wheel_radius):
-      
+
         if mass <= 0:
             raise Exception("Invalid Mass {}".format(mass))
-        elif rotational_inertia <=0:
+        elif rotational_inertia <= 0:
             raise Exception("Invalid Rotational Inertia {}".format(rotational_inertia))
         elif motor_power <= 0:
             raise Exception("Invalid motor power {}".format(motor_power))
@@ -38,20 +31,20 @@ class ElectricCarProperties:
         elif wheel_radius <= 0:
             raise Exception("Invalid wheel_radius {}".format(wheel_radius))
         else:
-            self._mass = mass
-            self._rotational_inertia = rotational_inertia
-            self._motor_power = motor_power
-            self._motor_efficiency = motor_efficiency
-            self._battery_capacity = battery_capacity
-            self._drag_coefficient = drag_coefficient
-            self._frontal_area = frontal_area
-            self._wheel_radius = wheel_radius
+            self._car_parameters["mass"] = mass
+            self._car_parameters["rotational_inertia"] = rotational_inertia
+            self._car_parameters["motor_power"] = motor_power
+            self._car_parameters["motor_efficiency"] = motor_efficiency
+            self._car_parameters["battery_capacity"] = battery_capacity
+            self._car_parameters["drag_coefficient"] = drag_coefficient
+            self._car_parameters["frontal_area"] = frontal_area
+            self._car_parameters["frontal_area"] = frontal_area
+            self._car_parameters["wheel_radius"] = wheel_radius
+
             self._properties_set = True
-    
-    def get_mass():
+
+    def get_car_parameters(self):
         if self._propserties_set:
-            return self.mass
+            return self._car_parameters
         else:
-            logger.error("Properties Not Set Yet!",)
-
-
+            logger.error("Properties Not Set Yet!", extra={'sim_index': 'N/A'})
