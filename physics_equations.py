@@ -7,6 +7,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class PhysicsCalculationOutput():
     """Class that contains the data
     that every physics based function must return
@@ -93,7 +94,8 @@ def free_acceleration_calculation(initial_velocity,
     THIS MUST BE DONE OVER A SMALL distance_of_travel TO
     MAKE THE ASSUMPTIONS TRUE:
     Assumptions:
-        - Drag force calculated using initial velocity because change in velocity is assumed to be small
+        - Drag force calculated using initial velocity
+          because change in velocity is assumed to be small
         - No elevation change
 
     TODO: add in elevation change to equations
@@ -148,12 +150,19 @@ def free_acceleration_calculation(initial_velocity,
     final_velocity = sqrt(energy_sum /
                           final_kinetic_energy_term)
 
+<<<<<<< HEAD
     final_linear_kinetic_energy = kinetic_energy_calculation(mass, final_velocity)
     final_rotational_kinetic_energy = \
         rotational_kinetic_energy_calculation(rotational_inertia, wheel_radius, final_velocity)
 
     # TODO MH Add in a check that the actual drag losses using the final velocity wouldn't be XX percent
     # different than the calculated one, if it would be then redo calc with smaller distance traveled
+=======
+    # TODO MH Add in a check that the actual drag losses
+    # using the final velocity wouldn't be XX percent
+    # different than the calculated one, if it would be
+    # then redo calc with smaller distance traveled
+>>>>>>> updated everything to use the datastore and linted
     # or solve with a system of equations
 
     # time_of_segment = distance_of_travel / ((final_velocity + initial_velocity) / 2)
