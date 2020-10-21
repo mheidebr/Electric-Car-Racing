@@ -1,15 +1,11 @@
 # The actual simulation goes here
 # USE ONLY SI UNITS
 import sys
-import os
 import time
 import logging
 import threading
 from PyQt5 import QtWidgets
-from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
-from copy import deepcopy, copy
-import threading
 
 
 from physics_equations import (max_negative_power_physics_simulation,
@@ -33,55 +29,49 @@ def total_power_consumption(car, track):
         return 0
 
 
-def racing_simulation(car: ElectricCarProperties,
-                      track: TrackProperties,
-                      ):
+def racing_simulation(data_store):
     """Function accepts a car and a track and executes
     a simulation to ouput critical metrics related
     to battery life and track speed.
 
     Args:
-        car (ElectricCarProperties): Characteristics of car being simulated
-        track (TrackProperties): Characteristics of track being simulated
+        data_store (DataStore): Thread safe storage for all simulation data
 
     Returns:
-        results (RacingSimulationResults): output of the simulation
+        Nothing (all data saved in the datastore)
 
     """
     results = RacingSimulationResults()
 
-    lap_results = lap_velocity_simulation(data_store, car, track, main_window)
-    results.laps_per_pit_stop = car.battery_capacity / lap_results.battery_energy_profile[-1]
-    results.lap_time = lap_results.end_velocity
-    results.lap_results = lap_results
+    lap_results = lap_velocity_simulation(data_store)
+    # only calculate results if the simulation ran through without an interruption
+    if not data_store.exit_event.is_set():
+        car = data_store.get_car_properties()
+        results.laps_per_pit_stop = car.battery_capacity / lap_results.battery_energy_profile[-1]
+        results.lap_time = lap_results.end_velocity
+        results.lap_results = lap_results
+        data_store.set_race_results(results)
 
-    return results
 
-
-def lap_velocity_simulation(data_store,
-                            car: ElectricCarProperties,
-                            track: TrackProperties,
-                            ):
+def lap_velocity_simulation(data_store):
     """Function calculates the velocity profile of a car with
     car_properties on a track with track_properties. The car
     starts with an ititial velocity of initial_velocity.
 
     Args:
-        initial_velocity (double): initial velocity of the car at time = 0
-        delta_distance (double): length over which each physics simulation is done
-        car (ElectricCarProperties): Characteristics of car being simulated
-        track (TrackProperties): Characteristics of track being simulated
+        data_store (DataStore): Thread safe storage for all simulation data
 
     Returns:
-        results (LapVelocitySimulationResults): output of the lap simulation
+        Nothing (all data saved in the datastore)
     """
-
+    track = data_store.get_track_profile()
+    car = data_store.get_car_properties()
     lap_results = LapVelocitySimulationResults(len(track.max_velocity_list))
 
     sim_index = data_store.get_simulation_index()
     # need to populate the time profile be the same length as the distance list
     # to complete a lap of simulation
-    while sim_index < len(track.distance_list):
+    while sim_index < len(track.distance_list) and not data_store.exit_event.is_set():
         try:
             distance_of_travel = (track.distance_list[sim_index + 1] -
                                   track.distance_list[sim_index])
@@ -133,11 +123,12 @@ def lap_velocity_simulation(data_store,
                 velocity = lap_results.velocity_profile[sim_index - 1]
                 # last deceleration will be a constrained velocity because
                 # it will be neither max positive or negative motor power
-                physics_results = constrained_velocity_physics_simulation(velocity,
-                                                                          track.max_velocity_list[sim_index],
-                                                                          distance_of_travel,
-                                                                          car,
-                                                                          track)
+                physics_results = \
+                    constrained_velocity_physics_simulation(velocity,
+                                                            track.max_velocity_list[sim_index],
+                                                            distance_of_travel,
+                                                            car,
+                                                            track)
                 # check if constrained velocity calculation is realistic
                 # TODO other checks here can be on acceleration or wheel force
                 if abs(physics_results.motor_power) > abs(car.motor_power):
@@ -159,7 +150,17 @@ def lap_velocity_simulation(data_store,
         data_store.set_velocity(lap_results.velocity_profile[sim_index])
         data_store.increment_simulation_index()
 
-    return lap_results
+
+class SimulationThread(threading.thread):
+    """Wrapper class for running the the simulation.
+    """
+    def __init__(self, data_store, *args, **kwargs):
+        super().__init__(daemon=True, *args, **kwargs)
+        self._data_store = data_store
+
+    def run(self):
+        racing_simulation(self._data_store)
+
 
 class VisualizationThread(threading.thread):
     """Wrapper class for running the visualization part of
@@ -167,14 +168,13 @@ class VisualizationThread(threading.thread):
 
     """
 
-    def __init__(self, data_store, exit_event):
+    def __init__(self, data_store, *args, **kwargs):
         super().__init__(daemon=True, *args, **kwargs)
         self._data_store = data_store
-        self._exit_event = exit_event
         self._display_window = MainWindow()
 
-    def run():
-        while not self._exit_event.is_set():
+    def run(self):
+        while not self._data_store.exit_event.is_set():
             time.sleep(1.0)
             self._display_window.regraph(self._data_store.get)
 
@@ -186,7 +186,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.graphWidget = pg.PlotWidget()
         self.setCentralWidget(self.graphWidget)
-
 
     def regraph(self, time_list, distance, velocity):
         # plot data: x, y values
@@ -203,7 +202,7 @@ def main():
 
     data_store = DataStore()
 
-    app = QtWidgets.QApplication(sys.argv)
+    QtWidgets.QApplication(sys.argv)
 
     main_window = MainWindow()
     main_window.show()
@@ -225,28 +224,36 @@ def main():
     track.add_critical_point(2000, 100, track.FREE_ACCELERATION)
     track.generate_track_list(segment_distance)
 
-    data_store.initialize_lap_profiles(len(track.distance_list))
-
     car = ElectricCarProperties(mass=mass, rotational_inertia=rotational_inertia,
                                 motor_power=battery_power, motor_efficiency=motor_efficiency,
                                 battery_capacity=10, drag_coefficient=drag_coefficient,
                                 frontal_area=frontal_area, wheel_radius=wheel_radius)
 
-    # define run method for each thread target
-
+    data_store.initialize_lap_profiles(len(track.distance_list))
+    data_store.set_car_properties(car)
+    data_store.set_track_properties(track)
     # create threads
+    simulation_thread = SimulationThread(data_store)
+    visualization_thread = VisualizationThread(data_store)
+
+    simulation_thread.start()
+    visualization_thread.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        logger.info("Keyboard interrupt... Shutting down")
+    finally:
+        data_store.exit_event.set()
+
+        simulation_thread.join()
+        visualization_thread.join()
     # create exit condition
     # start threads
     # while(1)
     # except keyboard interrupt
     # close things down
-
-
-    # 1. generate results
-    racing_results = racing_simulation(data_store, car, track)
-
-    # 3. display results
-    sys.exit(app.exec_())
 
 
 if __name__ == '__main__':

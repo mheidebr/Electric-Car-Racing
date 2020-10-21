@@ -31,6 +31,9 @@ class DataStore:
         self._race_simulation_results_lock = threading.Lock()
         self._simulation_info_lock = threading.Lock()  # lock for simulation time variables
 
+        # for interrupting and stopping the simulation
+        self.exit_event = threading.Event()
+
     # Getters and setters for simulation time variables
     def get_simulation_index(self):
         with self._simulation_info_lock:

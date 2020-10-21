@@ -58,7 +58,7 @@ class TrackProperties:
         Args:
             distance_from_start_finish (float): distance from the start
                                                 finish line of the critical point (meters)
-            max_velocity (float): maximum allowable velocity at that point in the track (meters/second)
+            max_velocity (float): maximum allowable velocity at that point in the track (m/s)
             velocity_constraint (string): type of velocity constraint, "free" "linear" or "constant"
 
         Returns:
@@ -108,74 +108,9 @@ class TrackProperties:
             try:
                 max_velocity, velocity_constraint = ordered_dict[x]
             except KeyError:
+                logger.info("key error, passing")
                 pass
 
             self.distance_list.append(x)
             self.velocity_constraint_list.append(velocity_constraint)
             self.max_velocity_list.append(max_velocity)
-
-# in meters/second
-test_track_max_velocity = [
-    20,
-    23,
-    25,
-    26,
-    28,
-    30,
-    25,
-    20,
-    21,
-    22,
-    22,
-    25,
-    28,
-    32,
-    36,
-    40,
-    42,
-    38,
-    35,
-    32,
-    28,
-    24,
-    20,
-]
-
-
-test_track_distance_list = [
-    0,
-    100,
-    200,
-    300,
-    400,
-    500,
-    600,
-    700,
-    800,
-    900,
-    1000,
-    1100,
-    1200,
-    1300,
-    1400,
-    1500,
-    1600,
-    1700,
-    1800,
-    1900,
-    2000,
-    2100,
-    2200,
-]
-
-test_track_2_distance = [
-    0,
-    100,
-    200
-]
-
-test_track_2_max_velocity = [
-    10,
-    20,
-    5,
-]
