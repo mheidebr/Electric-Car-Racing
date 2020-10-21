@@ -100,17 +100,20 @@ class TrackProperties:
 
         # highest distance value:
         last_distance = next(reversed(ordered_dict))
-        logger.debug("last distance: {}".format(last_distance),
-                     extra={'sim_index': 'N/A'})
+        logger.info("last distance: {}".format(last_distance), extra={'sim_index': 'N/A'})
 
         for x in numpy.arange(0, last_distance, delta_distance):
             # update the max velocity and velocity constraint
+            # only when there is a matching max velocity constraint
+            # otherwise pass, it is expected to get a bunch of KeyErrors
             try:
-                max_velocity, velocity_constraint = ordered_dict[x]
+                # collections.OrderedDict return tuples and we want the first element
+                # of the tuple
+                max_velocity = ordered_dict[x][0]
             except KeyError:
-                logger.info("key error, passing")
                 pass
 
             self.distance_list.append(x)
             self.velocity_constraint_list.append(velocity_constraint)
             self.max_velocity_list.append(max_velocity)
+        print(type(self.max_velocity_list))

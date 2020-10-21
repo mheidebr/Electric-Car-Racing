@@ -16,7 +16,7 @@ class DataStore:
     def __init__(self):
 
         self._car = electric_car_properties.ElectricCarProperties()
-        self._track_profile = track_properties.TrackProperties()
+        self._track_properties = track_properties.TrackProperties()
         self._lap_simulation_results = LapVelocitySimulationResults()
         self._race_simulation_results = RacingSimulationResults()
 
@@ -26,7 +26,7 @@ class DataStore:
         self._velocity = 1
 
         self._car_lock = threading.Lock()
-        self._track_profile_lock = threading.Lock()
+        self._track_properties_lock = threading.Lock()
         self._lap_simulation_results_lock = threading.Lock()
         self._race_simulation_results_lock = threading.Lock()
         self._simulation_info_lock = threading.Lock()  # lock for simulation time variables
@@ -93,11 +93,11 @@ class DataStore:
     # getters and setters for simulation related classes
     def get_car_properties(self):
         with self._car_lock:
-            return self._car
+            return self._car.get_car_parameters()
 
-    def get_track_profile(self):
-        with self._track_profile_lock:
-            return self._track_profile
+    def get_track_properties(self):
+        with self._track_properties_lock:
+            return self._track_properties
 
     def get_race_results(self):
         with self._race_simulation_results_lock:
@@ -106,6 +106,10 @@ class DataStore:
     def set_car_properties(self, car_properties):
         with self._car_lock:
             self._car = car_properties
+
+    def set_track_properties(self, track_properties):
+        with self._track_properties_lock:
+            self._track_properties = track_properties
 
     def set_race_results(self, race_results):
         with self._race_simulation_results_lock:
@@ -118,13 +122,17 @@ class DataStore:
         with self._lap_simulation_results_lock:
             return self._lap_simulation_results
 
+    def get_velocity_at_index(self, index):
+        with self._lap_simulation_results_lock:
+            return self._lap_simulation_results.velocity_profile[index]
+
     def initialize_lap_profiles(self, length):
         with self._lap_simulation_results_lock:
             self._lap_simulation_results.initialize_profiles(length)
 
-    def add_physics_results_to_lap_results(self, physics_results):
+    def add_physics_results_to_lap_results(self, physics_results, index):
         with self._lap_simulation_results_lock:
-            self._lap_simulation_results.add_physics_results(physics_results)
+            self._lap_simulation_results.add_physics_results(physics_results, index)
 
 
 class RacingSimulationResults():

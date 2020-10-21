@@ -18,15 +18,9 @@ from track_properties import TrackProperties
 from logging_config import configure_logging
 from datastore import (DataStore,
                        RacingSimulationResults,
-                       LapVelocitySimulationResults,
                        )
 
 logger = logging.getLogger(__name__)
-
-def total_power_consumption(car, track):
-    for i in range(len(track.distance_list)):
-        # placeholder
-        return 0
 
 
 def racing_simulation(data_store):
@@ -64,9 +58,8 @@ def lap_velocity_simulation(data_store):
     Returns:
         Nothing (all data saved in the datastore)
     """
-    track = data_store.get_track_profile()
+    track = data_store.get_track_properties()
     car = data_store.get_car_properties()
-    lap_results = LapVelocitySimulationResults(len(track.max_velocity_list))
 
     sim_index = data_store.get_simulation_index()
     # need to populate the time profile be the same length as the distance list
@@ -77,13 +70,12 @@ def lap_velocity_simulation(data_store):
                                   track.distance_list[sim_index])
         except IndexError as e:
             logger.error("index error: {}\n{}".format(track.distance_list[sim_index], e),
-            extra={'sim_index': sim_index})
+                         extra={'sim_index': sim_index})
         velocity = data_store.get_velocity()
         physics_results = max_positive_power_physics_simulation(velocity,
                                                                 distance_of_travel,
                                                                 car,
                                                                 track)
-
         # check if velocity constraints are violated
         if physics_results.final_velocity > track.max_velocity_list[sim_index]:
             # velocity constraint violated!!
@@ -91,7 +83,7 @@ def lap_velocity_simulation(data_store):
             logger.info("velocity constraint violated starting walk back, current v: {}, max: {}"
                         .format(physics_results.final_velocity, track.max_velocity_list[sim_index]),
                         extra={'sim_index': data_store.get_simulation_index()})
-            while lap_results.velocity_profile[sim_index] > track.max_velocity_list[sim_index]:
+            while data_store.get_velocity_at_index(sim_index) > track.max_velocity_list[sim_index]:
                 """This while loop's pupose is to recalculate a portion of the
                 car's car profile because the car ended up going to fast at a point on the
                 track. To recalculate the following happens:
@@ -112,15 +104,15 @@ def lap_velocity_simulation(data_store):
                             .format(recalculation_start_index, recalculation_end_index),
                             extra={'sim_index': data_store.get_simulation_index()})
                 for i in range((sim_index - walk_back_counter), (sim_index - 1)):
-                    velocity = lap_results.velocity_profile[i - 1]
+                    velocity = data_store.get_velocity_at_index(i - 1)
                     # recalculate with negative motor power
                     results = max_negative_power_physics_simulation(velocity,
                                                                     distance_of_travel,
                                                                     car,
                                                                     track)
-                    lap_results.add_physics_results(results, i)
+                    data_store.add_physics_results_to_lap_results(results, i)
 
-                velocity = lap_results.velocity_profile[sim_index - 1]
+                velocity = data_store.get_velocity_at_index(sim_index - 1)
                 # last deceleration will be a constrained velocity because
                 # it will be neither max positive or negative motor power
                 physics_results = \
@@ -142,16 +134,16 @@ def lap_velocity_simulation(data_store):
                 else:
                     logger.info("constrained velocity equation accepted",
                                 extra={'sim_index': data_store.get_simulation_index})
-                    lap_results.add_physics_results(results, sim_index)
+                    data_store.add_physics_results_to_lap_results(results, sim_index)
 
             # reset walk back index
             data_store.reset_walk_back_counter()
-
-        data_store.set_velocity(lap_results.velocity_profile[sim_index])
+        velocity = data_store.get_velocity_at_index(sim_index)
+        data_store.set_velocity(velocity)
         data_store.increment_simulation_index()
 
 
-class SimulationThread(threading.thread):
+class SimulationThread(threading.Thread):
     """Wrapper class for running the the simulation.
     """
     def __init__(self, data_store, *args, **kwargs):
@@ -162,7 +154,7 @@ class SimulationThread(threading.thread):
         racing_simulation(self._data_store)
 
 
-class VisualizationThread(threading.thread):
+class VisualizationThread(threading.Thread):
     """Wrapper class for running the visualization part of
     the simulation.
 
@@ -170,22 +162,27 @@ class VisualizationThread(threading.thread):
 
     def __init__(self, data_store, *args, **kwargs):
         super().__init__(daemon=True, *args, **kwargs)
+        QtWidgets.QApplication(sys.argv)
         self._data_store = data_store
         self._display_window = MainWindow()
 
     def run(self):
         while not self._data_store.exit_event.is_set():
-            time.sleep(1.0)
-            self._display_window.regraph(self._data_store.get)
+
+            current_lap_results = self._data_store.get_lap_results()
+            time = current_lap_results.time_profile
+            velocity = current_lap_results.velocity_profile
+            distance = current_lap_results.distance_profile
+            self._display_window.regraph(time, distance, velocity)
 
 
 class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-
         self.graphWidget = pg.PlotWidget()
         self.setCentralWidget(self.graphWidget)
+        self.graphWidget.show()
 
     def regraph(self, time_list, distance, velocity):
         # plot data: x, y values
@@ -195,17 +192,11 @@ class MainWindow(QtWidgets.QMainWindow):
 
 # rotational inertia estimation: http://www.hpwizard.com/rotational-inertia.html
 def main():
-
     data_store = DataStore()
 
     configure_logging()
 
     data_store = DataStore()
-
-    QtWidgets.QApplication(sys.argv)
-
-    main_window = MainWindow()
-    main_window.show()
 
     segment_distance = 0.01  # 1cm
     battery_power = 40000  # 40kW
@@ -217,43 +208,42 @@ def main():
     frontal_area = 7  # m^2
     air_density = 1  # kg/m^3
 
-    track = TrackProperties(air_density)
+    track = TrackProperties()
+    track.set_air_density(air_density)
 
     track.add_critical_point(0, 10, track.FREE_ACCELERATION)
     track.add_critical_point(10, 5, track.FREE_ACCELERATION)
     track.add_critical_point(2000, 100, track.FREE_ACCELERATION)
     track.generate_track_list(segment_distance)
 
-    car = ElectricCarProperties(mass=mass, rotational_inertia=rotational_inertia,
-                                motor_power=battery_power, motor_efficiency=motor_efficiency,
-                                battery_capacity=10, drag_coefficient=drag_coefficient,
-                                frontal_area=frontal_area, wheel_radius=wheel_radius)
+    car = ElectricCarProperties()
+    car.set_car_parameters(mass=mass, rotational_inertia=rotational_inertia,
+                           motor_power=battery_power, motor_efficiency=motor_efficiency,
+                           battery_capacity=10, drag_coefficient=drag_coefficient,
+                           frontal_area=frontal_area, wheel_radius=wheel_radius)
 
     data_store.initialize_lap_profiles(len(track.distance_list))
     data_store.set_car_properties(car)
     data_store.set_track_properties(track)
+
     # create threads
     simulation_thread = SimulationThread(data_store)
-    visualization_thread = VisualizationThread(data_store)
-
+    #visualization_thread = VisualizationThread(data_store)
+    print("threads set up")
+    time.sleep(3)
     simulation_thread.start()
-    visualization_thread.start()
+    #visualization_thread.start()
 
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        logger.info("Keyboard interrupt... Shutting down")
+        logger.info("Keyboard interrupt... Shutting down", extra={'sim_index': 'N/A'})
     finally:
         data_store.exit_event.set()
 
         simulation_thread.join()
-        visualization_thread.join()
-    # create exit condition
-    # start threads
-    # while(1)
-    # except keyboard interrupt
-    # close things down
+        #visualization_thread.join()
 
 
 if __name__ == '__main__':
