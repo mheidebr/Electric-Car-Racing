@@ -1,7 +1,6 @@
 # Physics Equations Pertaining to Racing
 # USE ONLY SI UNITS
 from math import sqrt
-from electric_car_properties import ElectricCarProperties
 from track_properties import TrackProperties
 import logging
 
@@ -150,19 +149,14 @@ def free_acceleration_calculation(initial_velocity,
     final_velocity = sqrt(energy_sum /
                           final_kinetic_energy_term)
 
-<<<<<<< HEAD
     final_linear_kinetic_energy = kinetic_energy_calculation(mass, final_velocity)
     final_rotational_kinetic_energy = \
         rotational_kinetic_energy_calculation(rotational_inertia, wheel_radius, final_velocity)
 
-    # TODO MH Add in a check that the actual drag losses using the final velocity wouldn't be XX percent
-    # different than the calculated one, if it would be then redo calc with smaller distance traveled
-=======
     # TODO MH Add in a check that the actual drag losses
     # using the final velocity wouldn't be XX percent
     # different than the calculated one, if it would be
     # then redo calc with smaller distance traveled
->>>>>>> updated everything to use the datastore and linted
     # or solve with a system of equations
 
     # time_of_segment = distance_of_travel / ((final_velocity + initial_velocity) / 2)
@@ -257,7 +251,7 @@ def constrained_velocity_calculation(initial_velocity,
 
 def max_positive_power_physics_simulation(initial_velocity,
                                           distance_of_travel,
-                                          car: ElectricCarProperties,
+                                          car,
                                           track: TrackProperties):
     """Function that calculates a small portion of a lap
     of a car with car_characteristics on a track with track_characteristics. The
@@ -266,7 +260,7 @@ def max_positive_power_physics_simulation(initial_velocity,
     Args:
         initial_velocity (float): initial velocity (m/s)
         distance_of_travel (float): distance traveled for the calculation
-        car (ElectricCarProperties): Characteristics of car being simulated
+        car (dict): Characteristics of car being simulated
         track (TrackProperties): Characteristics of track being simulated
 
     Returns:
@@ -277,20 +271,20 @@ def max_positive_power_physics_simulation(initial_velocity,
                  extra={'sim_index': 'N/A'})
     results = free_acceleration_calculation(initial_velocity,
                                             distance_of_travel,
-                                            car.motor_power,
-                                            car.motor_efficiency,
-                                            car.wheel_radius,
-                                            car.rotational_inertia,
-                                            car.mass,
-                                            car.drag_coefficient,
-                                            car.frontal_area,
-                                            track.air_density)
+                                            car["motor_power"],
+                                            car["motor_efficiency"],
+                                            car["wheel_radius"],
+                                            car["rotational_inertia"],
+                                            car["mass"],
+                                            car["drag_coefficient"],
+                                            car["frontal_area"],
+                                            track.get_air_density())
     return results
 
 
 def max_negative_power_physics_simulation(initial_velocity,
                                           distance_of_travel,
-                                          car: ElectricCarProperties,
+                                          car,
                                           track: TrackProperties):
     """Function that calculates a small portion of a lap
     of a car with car_characteristics on a track with track_characteristics. The
@@ -299,7 +293,7 @@ def max_negative_power_physics_simulation(initial_velocity,
     Args:
         initial_velocity (float): initial velocity (m/s)
         distance_of_travel (float): distance traveled for the calculation
-        car (ElectricCarProperties): Characteristics of car being simulated
+        car (dict): Characteristics of car being simulated
         track (TrackProperties): Characteristics of track being simulated
 
     Returns:
@@ -310,21 +304,21 @@ def max_negative_power_physics_simulation(initial_velocity,
                  extra={'sim_index': 'N/A'})
     results = free_acceleration_calculation(initial_velocity,
                                             distance_of_travel,
-                                            -car.motor_power,
-                                            car.motor_efficiency,
-                                            car.wheel_radius,
-                                            car.rotational_inertia,
-                                            car.mass,
-                                            car.drag_coefficient,
-                                            car.frontal_area,
-                                            track.air_density)
+                                            -car["motor_power"],
+                                            car["motor_efficiency"],
+                                            car["wheel_radius"],
+                                            car["rotational_inertia"],
+                                            car["mass"],
+                                            car["drag_coefficient"],
+                                            car["frontal_area"],
+                                            track.get_air_density())
     return results
 
 
 def constrained_velocity_physics_simulation(initial_velocity,
                                             final_velocity,
                                             distance_of_travel,
-                                            car: ElectricCarProperties,
+                                            car,
                                             track: TrackProperties):
     """Function that calculates a small portion of a lap
     of a car with car_characteristics on a track with track_characteristics.
@@ -336,7 +330,7 @@ def constrained_velocity_physics_simulation(initial_velocity,
     Args:
         initial_velocity (float): initial velocity (m/s)
         final_velocity (float): initial velocity (m/s)
-        car_properties (ElectricCarProperties): Characteristics of car being simulated
+        car_properties (dict): Characteristics of car being simulated
         track_properites (TrackProperties): Characteristics of track being simulated
 
     Returns:
@@ -348,8 +342,8 @@ def constrained_velocity_physics_simulation(initial_velocity,
     results = constrained_velocity_calculation(initial_velocity,
                                                final_velocity,
                                                distance_of_travel,
-                                               car.motor_efficiency,
-                                               car.drag_coefficient,
-                                               car.frontal_area,
-                                               track.air_density)
+                                               car["motor_efficiency"],
+                                               car["drag_coefficient"],
+                                               car["frontal_area"],
+                                               track.get_air_density())
     return results

@@ -44,7 +44,7 @@ class ElectricCarProperties:
             self._properties_set = True
 
     def get_car_parameters(self):
-        if self._propserties_set:
+        if self._properties_set:
             return self._car_parameters
         else:
             logger.error("Properties Not Set Yet!", extra={'sim_index': 'N/A'})
