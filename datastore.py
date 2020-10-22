@@ -3,6 +3,7 @@ import logging
 import threading
 import track_properties
 import electric_car_properties
+from copy import deepcopy
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +22,8 @@ class DataStore:
         self._race_simulation_results = RacingSimulationResults()
 
         # simulation time variables
-        self._simulation_index = 0
+        self._simulation_index = 1
         self._walk_back_counter = 0
-        self._velocity = 1
 
         self._car_lock = threading.Lock()
         self._track_properties_lock = threading.Lock()
@@ -37,22 +37,20 @@ class DataStore:
     # Getters and setters for simulation time variables
     def get_simulation_index(self):
         with self._simulation_info_lock:
-            return self._simulation_index
-
-    def get_velocity(self):
-        with self._simulation_info_lock:
-            return self._velocity
+            logger.debug("index retrieved",
+                         extra={'sim_index': self._simulation_index})
+            return deepcopy(self._simulation_index)
 
     def get_walk_back_counter(self):
         with self._simulation_info_lock:
-            return self._walk_back_counter
+            return deepcopy(self._walk_back_counter)
 
     def increment_simulation_index(self):
         with self._simulation_info_lock:
             temp = self._simulation_index
             self._simulation_index += 1
-            logger.debug("index updated to {} from {}".format(self._simulation_index,
-                                                              temp))
+            logger.debug("index updated to {}".format(self._simulation_index),
+                         extra={'sim_index': temp})
 
     def decrement_simulation_index(self):
         with self._simulation_info_lock:
@@ -80,16 +78,6 @@ class DataStore:
             logger.debug("walk_back_counter updated to {} from {}".format(self._walk_back_counter,
                                                                           temp))
 
-    def set_velocity(self, new_velocity):
-        with self._simulation_info_lock:
-            if new_velocity >= 0:
-                temp = self._velocity
-                self._velocity = new_velocity
-                logger.debug("velocity updated to {} from {}".format(self._velocity,
-                                                                     temp))
-            else:
-                logger.warning("invalid new_velocity input, must be > 0: {}".format(new_velocity))
-
     # getters and setters for simulation related classes
     def get_car_properties(self):
         with self._car_lock:
@@ -97,7 +85,7 @@ class DataStore:
 
     def get_track_properties(self):
         with self._track_properties_lock:
-            return self._track_properties
+            return deepcopy(self._track_properties)
 
     def get_race_results(self):
         with self._race_simulation_results_lock:
@@ -124,7 +112,12 @@ class DataStore:
 
     def get_velocity_at_index(self, index):
         with self._lap_simulation_results_lock:
-            return self._lap_simulation_results.velocity_profile[index]
+            try:
+                velocity = self._lap_simulation_results.velocity_profile[index]
+            except IndexError:
+                logger.info("index out of range: {}, returning last velocity")
+                velocity = self._lap_simulation_results.velocity_profile[-1]
+        return velocity
 
     def initialize_lap_profiles(self, length):
         with self._lap_simulation_results_lock:
@@ -171,19 +164,20 @@ class LapVelocitySimulationResults():
         self.distance_profile = []
         self.motor_power_profile = []
         self.battery_power_profile = []
-        self.battery_energy_profile = []
+        self.motor_energy_profile = []
         self.acceleration_profile = []
         self.velocity_profile = []
         self.physics_results_list = []
 
+        # lenght - 1 is for the because the first element is added above
         for i in range(length):
             self.time_profile.append(0)
             self.distance_profile.append(0)
             self.motor_power_profile.append(0)
             self.battery_power_profile.append(0)
-            self.battery_energy_profile.append(0)
+            self.motor_energy_profile.append(0)
             self.acceleration_profile.append(0)
-            self.velocity_profile.append(0)
+            self.velocity_profile.append(1)
             self.physics_results_list.append(0)
 
     def add_physics_results(self, physics_results, index):
@@ -202,9 +196,7 @@ class LapVelocitySimulationResults():
         self.time_profile[index] = (self.time_profile[index - 1] +
                                     physics_results.time_of_segment)
         self.motor_power_profile[index] = physics_results.motor_power
-        self.battery_power_profile[index] = (physics_results.energy_differential_of_battery /
-                                             physics_results.time_of_segment)
-        self.battery_energy_profile[index] = (self.battery_energy_profile[index - 1] +
-                                              physics_results.energy_differential_of_battery)
+        self.motor_energy_profile[index] = (self.motor_energy_profile[index - 1] +
+                                            physics_results.energy_differential_of_motor)
         self.acceleration_profile[index] = physics_results.acceleration
         self.velocity_profile[index] = physics_results.final_velocity
