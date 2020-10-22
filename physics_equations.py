@@ -21,12 +21,13 @@ class PhysicsCalculationOutput():
     TODO: add checks on output data
     """
     def __init__(self, final_velocity, distance_traveled, time_of_segment,
-                 energy_differential_of_battery, acceleration):
+                 energy_differential_of_motor, acceleration):
         self.final_velocity = final_velocity
         self.distance_traveled = distance_traveled
         self.time_of_segment = time_of_segment
-        self.energy_differential_of_battery = energy_differential_of_battery
+        self.energy_differential_of_motor = energy_differential_of_motor
         self.acceleration = acceleration
+        self.motor_power = self.energy_differential_of_motor / self.time_of_segment
 
 
 def rotational_inertia_calculation(rotational_mass, effective_radius):
@@ -65,17 +66,24 @@ def kinetic_energy_calculation(mass, velocity):
 
 def rotational_kinetic_energy_calculation(rotational_inertia, wheel_radius, velocity):
     rotational_kinetic_energy = 0.5 * rotational_inertia * ((velocity/wheel_radius) ** 2)
-    logger.debug("rotation kinetic energy, {}, rotational inertia, {}, velocity, {}, wheel_radius, {}"
-                 .format(rotational_kinetic_energy, rotational_inertia, velocity, wheel_radius),
-                 extra={'sim_index': 'N/A'})
+    logger.debug(
+        "rotation kinetic energy, {}, rotational inertia, {}, velocity, {}, wheel_radius, {}"
+        .format(rotational_kinetic_energy, rotational_inertia, velocity, wheel_radius),
+        extra={'sim_index': 'N/A'})
     return rotational_kinetic_energy
 
 
 def time_of_travel_calculation(velocity, distance):
-    time_of_travel = distance / velocity
-    logger.debug("time of travel, {}, distance, {}, velocity, {}"
-                 .format(time_of_travel, distance, velocity),
-                 extra={'sim_index': 'N/A'})
+    try:
+        time_of_travel = distance / velocity
+        logger.debug("time of travel, {}, distance, {}, velocity, {}"
+                     .format(time_of_travel, distance, velocity),
+                     extra={'sim_index': 'N/A'})
+    except ZeroDivisionError:
+        logger.error("zero division error velocity: {} distance: {}"
+                     .format(velocity, distance),
+                     extra={'sim_index': 'N/A'})
+        raise ZeroDivisionError
     return time_of_travel
 
 
@@ -343,6 +351,9 @@ def constrained_velocity_physics_simulation(initial_velocity,
                                                final_velocity,
                                                distance_of_travel,
                                                car["motor_efficiency"],
+                                               car["rotational_inertia"],
+                                               car["mass"],
+                                               car["wheel_radius"],
                                                car["drag_coefficient"],
                                                car["frontal_area"],
                                                track.get_air_density())

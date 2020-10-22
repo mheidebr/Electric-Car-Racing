@@ -65,19 +65,22 @@ def lap_velocity_simulation(data_store):
     # need to populate the time profile be the same length as the distance list
     # to complete a lap of simulation
     while sim_index < len(track.distance_list) and not data_store.exit_event.is_set():
+        sim_index = data_store.get_simulation_index()
         try:
-            distance_of_travel = (track.distance_list[sim_index + 1] -
-                                  track.distance_list[sim_index])
+            distance_of_travel = (track.distance_list[sim_index] -
+                                  track.distance_list[sim_index - 1])
+
         except IndexError as e:
             logger.error("index error: {}\n{}".format(track.distance_list[sim_index], e),
                          extra={'sim_index': sim_index})
-        velocity = data_store.get_velocity()
+        velocity = data_store.get_velocity_at_index(sim_index - 1)
         physics_results = max_positive_power_physics_simulation(velocity,
                                                                 distance_of_travel,
                                                                 car,
                                                                 track)
+        data_store.add_physics_results_to_lap_results(physics_results, sim_index)
         # check if velocity constraints are violated
-        if physics_results.final_velocity > track.max_velocity_list[sim_index]:
+        if data_store.get_velocity_at_index(sim_index) > track.max_velocity_list[sim_index]:
             # velocity constraint violated!!
             # start walking back until velocity constraint at sim_index is met
             logger.info("velocity constraint violated starting walk back, current v: {}, max: {}"
@@ -97,20 +100,26 @@ def lap_velocity_simulation(data_store):
                       walk back counter and recalculate
                 """
                 walk_back_counter = data_store.get_walk_back_counter()
-                sim_index = data_store.get_simulation_index()
                 recalculation_start_index = sim_index - walk_back_counter
-                recalculation_end_index = sim_index - 1
-                logger.info("starting and ending walkback index: {}, {}"
-                            .format(recalculation_start_index, recalculation_end_index),
-                            extra={'sim_index': data_store.get_simulation_index()})
-                for i in range((sim_index - walk_back_counter), (sim_index - 1)):
+                sim_index = sim_index
+                logger.debug("starting and ending walkback index: {}, {}"
+                             .format(recalculation_start_index, sim_index),
+                             extra={'sim_index': data_store.get_simulation_index()})
+                for i in range(recalculation_start_index, sim_index):
+
                     velocity = data_store.get_velocity_at_index(i - 1)
+                    logger.debug("velocity: {}"
+                                 .format(velocity),
+                                 extra={'sim_index': i})
                     # recalculate with negative motor power
-                    results = max_negative_power_physics_simulation(velocity,
-                                                                    distance_of_travel,
-                                                                    car,
-                                                                    track)
-                    data_store.add_physics_results_to_lap_results(results, i)
+                    physics_results = max_negative_power_physics_simulation(velocity,
+                                                                            distance_of_travel,
+                                                                            car,
+                                                                            track)
+                    logger.debug("next velocity: {}"
+                                 .format(physics_results.final_velocity),
+                                 extra={'sim_index': i})
+                    data_store.add_physics_results_to_lap_results(physics_results, i)
 
                 velocity = data_store.get_velocity_at_index(sim_index - 1)
                 # last deceleration will be a constrained velocity because
@@ -121,25 +130,30 @@ def lap_velocity_simulation(data_store):
                                                             distance_of_travel,
                                                             car,
                                                             track)
+                logger.debug("velocity start, end, max: {} {} {}"
+                             .format(velocity,
+                                     physics_results.final_velocity,
+                                     track.max_velocity_list[sim_index]),
+                             extra={'sim_index': sim_index})
                 # check if constrained velocity calculation is realistic
                 # TODO other checks here can be on acceleration or wheel force
-                if abs(physics_results.motor_power) > abs(car.motor_power):
-                    logger.info("velocity constraint still violated, calculated power: {}, max power: {}"
-                                .format(physics_results.motor_power, car.motor_power),
-                                extra={'sim_index': data_store.get_simulation_index()})
-                    logger.info("sim_index, walkback: {} {}, incrementing walk back"
-                                .format(sim_index, walk_back_counter),
-                                extra={'sim_index': data_store.get_simulation_index()})
+                if abs(physics_results.motor_power) > abs(car["motor_power"]):
+                    logger.debug(
+                        "velocity constraint still violated, calculated power: {}, max power: {}"
+                        .format(physics_results.motor_power, car["motor_power"]),
+                        extra={'sim_index': sim_index})
+                    logger.debug("sim_index, walkback: {} {}, incrementing walk back"
+                                 .format(sim_index, walk_back_counter),
+                                 extra={'sim_index': sim_index})
                     data_store.increment_walk_back_counter()
                 else:
                     logger.info("constrained velocity equation accepted",
-                                extra={'sim_index': data_store.get_simulation_index})
-                    data_store.add_physics_results_to_lap_results(results, sim_index)
+                                extra={'sim_index': sim_index})
+                    data_store.add_physics_results_to_lap_results(physics_results, sim_index)
 
             # reset walk back index
             data_store.reset_walk_back_counter()
-        velocity = data_store.get_velocity_at_index(sim_index)
-        data_store.set_velocity(velocity)
+
         data_store.increment_simulation_index()
 
 
@@ -190,6 +204,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.graphWidget.plot(time, velocity)
 
 
+def debug_printout(data_store):
+    while not data_store.exit_event.is_set():
+        time.sleep(1.0)
+        sim_index = data_store.get_simulation_index()
+        current_velocity = data_store.get_velocity_at_index(sim_index - 1)
+        logger.info("current_velocity: {}"
+                    .format(current_velocity),
+                    extra={'sim_index': sim_index})
+
+
 # rotational inertia estimation: http://www.hpwizard.com/rotational-inertia.html
 def main():
     data_store = DataStore()
@@ -227,11 +251,12 @@ def main():
     data_store.set_track_properties(track)
 
     # create threads
+    debug_print_thread = threading.Thread(target=debug_printout, args=[data_store])
     simulation_thread = SimulationThread(data_store)
     #visualization_thread = VisualizationThread(data_store)
-    print("threads set up")
-    time.sleep(3)
+
     simulation_thread.start()
+    debug_print_thread.start()
     #visualization_thread.start()
 
     try:
@@ -243,7 +268,11 @@ def main():
         data_store.exit_event.set()
 
         simulation_thread.join()
+        debug_print_thread.join()
         #visualization_thread.join()
+        lap_results = data_store.get_lap_results()
+        print(lap_results.velocity_profile)
+        print(lap_results.end_velocity)
 
 
 if __name__ == '__main__':

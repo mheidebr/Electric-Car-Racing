@@ -110,10 +110,13 @@ class TrackProperties:
                 # collections.OrderedDict return tuples and we want the first element
                 # of the tuple
                 max_velocity = ordered_dict[x][0]
+                print(x, max_velocity)
             except KeyError:
                 pass
 
             self.distance_list.append(x)
             self.velocity_constraint_list.append(velocity_constraint)
             self.max_velocity_list.append(max_velocity)
-        print(type(self.max_velocity_list))
+        logger.info("list type: {}".format(type(self.distance_list)), extra={'sim_index': 'N/A'})
+        logger.info("list length: {}".format(len(self.distance_list)), extra={'sim_index': 'N/A'})
+        logger.info("last distance: {}".format(self.distance_list[-1]), extra={'sim_index': 'N/A'})
