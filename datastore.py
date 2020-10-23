@@ -68,15 +68,17 @@ class DataStore:
         with self._simulation_info_lock:
             temp = self._walk_back_counter
             self._walk_back_counter += 1
-            logger.debug("walk_back_counter updated to {} from {}".format(self._walk_back_counter,
-                                                                          temp))
+            logger.debug("walk_back_counter updated to {} from {}"
+                         .format(self._walk_back_counter, temp),
+                         extra={'sim_index': "N/A"})
 
     def reset_walk_back_counter(self):
         with self._simulation_info_lock:
             temp = self._walk_back_counter
-            self._walk_back_counter = 1
-            logger.debug("walk_back_counter updated to {} from {}".format(self._walk_back_counter,
-                                                                          temp))
+            self._walk_back_counter = 0
+            logger.info("walk_back_counter updated to {} from {}"
+                        .format(self._walk_back_counter, temp),
+                        extra={'sim_index': "N/A"})
 
     # getters and setters for simulation related classes
     def get_car_properties(self):

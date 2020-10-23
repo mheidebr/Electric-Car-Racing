@@ -1,7 +1,6 @@
 # Physics Equations Pertaining to Racing
 # USE ONLY SI UNITS
 from math import sqrt
-from track_properties import TrackProperties
 import logging
 
 logger = logging.getLogger(__name__)
@@ -153,7 +152,7 @@ def free_acceleration_calculation(initial_velocity,
     energy_sum = (initial_linear_kinetic_energy +
                   initial_rotational_kinetic_energy -
                   drag_energy +
-                  energy_motor * motor_efficiency)
+                  energy_motor)
     final_velocity = sqrt(energy_sum /
                           final_kinetic_energy_term)
 
@@ -260,7 +259,7 @@ def constrained_velocity_calculation(initial_velocity,
 def max_positive_power_physics_simulation(initial_velocity,
                                           distance_of_travel,
                                           car,
-                                          track: TrackProperties):
+                                          air_density):
     """Function that calculates a small portion of a lap
     of a car with car_characteristics on a track with track_characteristics. The
     car is applying maximum foward effort with the motor.
@@ -286,14 +285,14 @@ def max_positive_power_physics_simulation(initial_velocity,
                                             car["mass"],
                                             car["drag_coefficient"],
                                             car["frontal_area"],
-                                            track.get_air_density())
+                                            air_density)
     return results
 
 
 def max_negative_power_physics_simulation(initial_velocity,
                                           distance_of_travel,
                                           car,
-                                          track: TrackProperties):
+                                          air_density):
     """Function that calculates a small portion of a lap
     of a car with car_characteristics on a track with track_characteristics. The
     car is applying maximum braking effort with the motor.
@@ -319,7 +318,7 @@ def max_negative_power_physics_simulation(initial_velocity,
                                             car["mass"],
                                             car["drag_coefficient"],
                                             car["frontal_area"],
-                                            track.get_air_density())
+                                            air_density)
     return results
 
 
@@ -327,7 +326,7 @@ def constrained_velocity_physics_simulation(initial_velocity,
                                             final_velocity,
                                             distance_of_travel,
                                             car,
-                                            track: TrackProperties):
+                                            air_density):
     """Function that calculates a small portion of a lap
     of a car with car_characteristics on a track with track_characteristics.
     For this method of simulation the car is on a constrained velocity profile
@@ -356,5 +355,5 @@ def constrained_velocity_physics_simulation(initial_velocity,
                                                car["wheel_radius"],
                                                car["drag_coefficient"],
                                                car["frontal_area"],
-                                               track.get_air_density())
+                                               air_density)
     return results

@@ -6,6 +6,7 @@ import logging
 import threading
 from PyQt5 import QtWidgets
 import pyqtgraph as pg
+import cProfile
 
 
 from physics_equations import (max_negative_power_physics_simulation,
@@ -37,11 +38,12 @@ def racing_simulation(data_store):
     """
     results = RacingSimulationResults()
 
-    lap_results = lap_velocity_simulation(data_store)
+    lap_velocity_simulation(data_store)
     # only calculate results if the simulation ran through without an interruption
     if not data_store.exit_event.is_set():
+        lap_results = data_store.get_lap_results()
         car = data_store.get_car_properties()
-        results.laps_per_pit_stop = car.battery_capacity / lap_results.battery_energy_profile[-1]
+        results.laps_per_pit_stop = car["battery_capacity"] / lap_results.motor_energy_profile[-1]
         results.lap_time = lap_results.end_velocity
         results.lap_results = lap_results
         data_store.set_race_results(results)
@@ -58,35 +60,42 @@ def lap_velocity_simulation(data_store):
     Returns:
         Nothing (all data saved in the datastore)
     """
+    # performance increases by assigning local functions
+    # https://towardsdatascience.com/10-techniques-to-speed-up-python-runtime-95e213e925dc
+    add_pys_result_to_datastore = data_store.add_physics_results_to_lap_results
+    get_velocity = data_store.get_velocity_at_index
+
     track = data_store.get_track_properties()
+    air_density = track.get_air_density()
     car = data_store.get_car_properties()
 
     sim_index = data_store.get_simulation_index()
     # need to populate the time profile be the same length as the distance list
     # to complete a lap of simulation
-    while sim_index < len(track.distance_list) and not data_store.exit_event.is_set():
-        sim_index = data_store.get_simulation_index()
-        try:
-            distance_of_travel = (track.distance_list[sim_index] -
-                                  track.distance_list[sim_index - 1])
+    list_len = len(track.distance_list)
+    print(list_len)
+    while data_store.get_simulation_index() < list_len:
+        if data_store.exit_event.is_set():
+            break
+        data_store.get_simulation_index()
+        distance_of_travel = (track.distance_list[sim_index] -
+                              track.distance_list[sim_index - 1])
 
-        except IndexError as e:
-            logger.error("index error: {}\n{}".format(track.distance_list[sim_index], e),
-                         extra={'sim_index': sim_index})
-        velocity = data_store.get_velocity_at_index(sim_index - 1)
+        velocity = get_velocity(sim_index - 1)
         physics_results = max_positive_power_physics_simulation(velocity,
                                                                 distance_of_travel,
                                                                 car,
-                                                                track)
-        data_store.add_physics_results_to_lap_results(physics_results, sim_index)
+                                                                air_density)
+        add_pys_result_to_datastore(physics_results, sim_index)
         # check if velocity constraints are violated
-        if data_store.get_velocity_at_index(sim_index) > track.max_velocity_list[sim_index]:
+        if get_velocity(sim_index) > track.max_velocity_list[sim_index]:
             # velocity constraint violated!!
             # start walking back until velocity constraint at sim_index is met
             logger.info("velocity constraint violated starting walk back, current v: {}, max: {}"
                         .format(physics_results.final_velocity, track.max_velocity_list[sim_index]),
                         extra={'sim_index': data_store.get_simulation_index()})
-            while data_store.get_velocity_at_index(sim_index) > track.max_velocity_list[sim_index]:
+            max_velocity_constraint = track.max_velocity_list[sim_index]
+            while get_velocity(sim_index) > max_velocity_constraint:
                 """This while loop's pupose is to recalculate a portion of the
                 car's car profile because the car ended up going to fast at a point on the
                 track. To recalculate the following happens:
@@ -101,13 +110,12 @@ def lap_velocity_simulation(data_store):
                 """
                 walk_back_counter = data_store.get_walk_back_counter()
                 recalculation_start_index = sim_index - walk_back_counter
-                sim_index = sim_index
                 logger.debug("starting and ending walkback index: {}, {}"
                              .format(recalculation_start_index, sim_index),
                              extra={'sim_index': data_store.get_simulation_index()})
                 for i in range(recalculation_start_index, sim_index):
 
-                    velocity = data_store.get_velocity_at_index(i - 1)
+                    velocity = get_velocity(i - 1)
                     logger.debug("velocity: {}"
                                  .format(velocity),
                                  extra={'sim_index': i})
@@ -115,29 +123,29 @@ def lap_velocity_simulation(data_store):
                     physics_results = max_negative_power_physics_simulation(velocity,
                                                                             distance_of_travel,
                                                                             car,
-                                                                            track)
+                                                                            air_density)
                     logger.debug("next velocity: {}"
                                  .format(physics_results.final_velocity),
                                  extra={'sim_index': i})
-                    data_store.add_physics_results_to_lap_results(physics_results, i)
+                    add_pys_result_to_datastore(physics_results, i)
 
-                velocity = data_store.get_velocity_at_index(sim_index - 1)
+                velocity = get_velocity(sim_index - 1)
                 # last deceleration will be a constrained velocity because
                 # it will be neither max positive or negative motor power
                 physics_results = \
                     constrained_velocity_physics_simulation(velocity,
-                                                            track.max_velocity_list[sim_index],
+                                                            max_velocity_constraint,
                                                             distance_of_travel,
                                                             car,
-                                                            track)
+                                                            air_density)
                 logger.debug("velocity start, end, max: {} {} {}"
                              .format(velocity,
                                      physics_results.final_velocity,
-                                     track.max_velocity_list[sim_index]),
+                                     max_velocity_constraint),
                              extra={'sim_index': sim_index})
                 # check if constrained velocity calculation is realistic
                 # TODO other checks here can be on acceleration or wheel force
-                if abs(physics_results.motor_power) > abs(car["motor_power"]):
+                if physics_results.motor_power < -car["motor_power"]:
                     logger.debug(
                         "velocity constraint still violated, calculated power: {}, max power: {}"
                         .format(physics_results.motor_power, car["motor_power"]),
@@ -147,9 +155,13 @@ def lap_velocity_simulation(data_store):
                                  extra={'sim_index': sim_index})
                     data_store.increment_walk_back_counter()
                 else:
+                    logger.info(
+                        "velocity constraint accepted, calculated power: {}, max power: {}"
+                        .format(physics_results.motor_power, car["motor_power"]),
+                        extra={'sim_index': sim_index})
                     logger.info("constrained velocity equation accepted",
                                 extra={'sim_index': sim_index})
-                    data_store.add_physics_results_to_lap_results(physics_results, sim_index)
+                    add_pys_result_to_datastore(physics_results, sim_index)
 
             # reset walk back index
             data_store.reset_walk_back_counter()
@@ -165,7 +177,10 @@ class SimulationThread(threading.Thread):
         self._data_store = data_store
 
     def run(self):
-        racing_simulation(self._data_store)
+        # profiling tool, look at results with runsnake:
+        # https://kupczynski.info/2015/01/16/profiling-python-scripts.html
+        # this has relatively little overhead for the overall runtime of the program
+        cProfile.runctx("racing_simulation(self._data_store)", globals(), locals(), 'profile.out')
 
 
 class VisualizationThread(threading.Thread):
@@ -208,9 +223,10 @@ def debug_printout(data_store):
     while not data_store.exit_event.is_set():
         time.sleep(1.0)
         sim_index = data_store.get_simulation_index()
+        walk_back_counter = data_store.get_walk_back_counter()
         current_velocity = data_store.get_velocity_at_index(sim_index - 1)
-        logger.info("current_velocity: {}"
-                    .format(current_velocity),
+        logger.info("current_velocity: {}, walk back counter: {}"
+                    .format(current_velocity, walk_back_counter),
                     extra={'sim_index': sim_index})
 
 
@@ -222,7 +238,7 @@ def main():
 
     data_store = DataStore()
 
-    segment_distance = 0.01  # 1cm
+    segment_distance = 0.005  # meters, this must be very very small
     battery_power = 40000  # 40kW
     motor_efficiency = 0.8
     wheel_radius = 0.25  # m, ~20 in OD on tires
@@ -236,8 +252,9 @@ def main():
     track.set_air_density(air_density)
 
     track.add_critical_point(0, 10, track.FREE_ACCELERATION)
-    track.add_critical_point(10, 5, track.FREE_ACCELERATION)
-    track.add_critical_point(2000, 100, track.FREE_ACCELERATION)
+    track.add_critical_point(5, 5, track.FREE_ACCELERATION)
+    track.add_critical_point(10, 10, track.FREE_ACCELERATION)
+    track.add_critical_point(12, 25, track.FREE_ACCELERATION)
     track.generate_track_list(segment_distance)
 
     car = ElectricCarProperties()
@@ -270,9 +287,6 @@ def main():
         simulation_thread.join()
         debug_print_thread.join()
         #visualization_thread.join()
-        lap_results = data_store.get_lap_results()
-        print(lap_results.velocity_profile)
-        print(lap_results.end_velocity)
 
 
 if __name__ == '__main__':
