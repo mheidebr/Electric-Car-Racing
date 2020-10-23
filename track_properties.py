@@ -118,5 +118,5 @@ class TrackProperties:
             self.velocity_constraint_list.append(velocity_constraint)
             self.max_velocity_list.append(max_velocity)
         logger.info("list type: {}".format(type(self.distance_list)), extra={'sim_index': 'N/A'})
-        logger.info("list length: {}".format(len(self.distance_list)), extra={'sim_index': 'N/A'})
+        logger.info("list length: {}".format(len(self.max_velocity_list)), extra={'sim_index': 'N/A'})
         logger.info("last distance: {}".format(self.distance_list[-1]), extra={'sim_index': 'N/A'})
