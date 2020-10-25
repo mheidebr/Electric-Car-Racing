@@ -12,7 +12,7 @@ class ElectricCarProperties:
 
     def set_car_parameters(self, mass, rotational_inertia, motor_power, motor_efficiency,
                            battery_capacity, drag_coefficient, frontal_area,
-                           wheel_radius):
+                           wheel_radius, wheel_pressure_bar):
 
         if mass <= 0:
             raise Exception("Invalid Mass {}".format(mass))
@@ -32,6 +32,8 @@ class ElectricCarProperties:
             raise Exception("Invalid frontal_area {}".format(frontal_area))
         elif wheel_radius <= 0:
             raise Exception("Invalid wheel_radius {}".format(wheel_radius))
+        elif wheel_pressure_bar <= 0:
+            raise Exception("Invalid wheel pressure: {}".format(wheel_pressure_bar))
         else:
             self._car_parameters["mass"] = mass
             # rotational inertia estimation: http://www.hpwizard.com/rotational-inertia.html
@@ -43,6 +45,7 @@ class ElectricCarProperties:
             self._car_parameters["frontal_area"] = frontal_area
             self._car_parameters["frontal_area"] = frontal_area
             self._car_parameters["wheel_radius"] = wheel_radius
+            self._car_parameters["wheel_pressure_bar"] = wheel_pressure_bar
 
             self._properties_set = True
 
