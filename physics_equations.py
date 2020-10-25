@@ -64,11 +64,13 @@ def rolling_resistance_force_calculation(mass_kg, velocity_m_s, tire_press_bar):
     Note that the reference equation gives speed in km/h so a conversion is necessary
     """
     velocity_km_h = velocity_m_s / 3.6  # 1000 m per km,  3600 sec per hr
-    coefficient_rolling_resistance = (0.005 + (1/tire_press_bar)*(0.01 + 0.0095 * (velocity_hm_h/100) ** 2)
+    coefficient_rolling_resistance = \
+        (0.005 + (1/tire_press_bar) * (0.01 + 0.0095 * (velocity_km_h/100) ** 2))
     rolling_resistance_force_newton = coefficient_rolling_resistance * mass_kg * GRAVITY
     logger.debug("rolling_resistance calc, mass, {}, v, {}, tire_press, {}, force, {}"
                  .format(mass_kg, velocity_m_s, tire_press_bar, rolling_resistance_force_newton))
     return rolling_resistance_force_newton
+
 
 # Kinetic energy change from velocity_start to velocity_end of and object with mass
 def kinetic_energy_change_calculation(velocity_end, velocity_start, mass):
@@ -118,6 +120,7 @@ def free_acceleration_calculation(initial_velocity,
                                   mass,
                                   drag_coefficient,
                                   frontal_area,
+                                  wheel_pressure_bar,
                                   air_density):
     """Solve for final velocity using an energy balance.
     THIS MUST BE DONE OVER A SMALL distance_of_travel TO
@@ -139,16 +142,17 @@ def free_acceleration_calculation(initial_velocity,
     See the e lemons google drive for proof of physics equations
 
     Args:
-        initial_velocity (double): initial velocity of car (meters/second)
-        distance_of_travel (double): distance overwhich the car travels (meters)
-        motor_power (double): power output (or input) by motor (Watts)
-        motor_efficiency (double): efficiency of motor (unitless)
-        wheel_radius (double): radius of wheels on car (meters)
-        rotational_inertia (double): car's rotational_inertia (kg*m^2)
-        mass (double): mass of car (kg)
-        drag_coefficient (double): coefficient of drag of car (unitless)
-        frontal_area (double): frontal area of car (meters^2)
-        air_density (double): density of air car is travling through (kg/meters^3)
+        initial_velocity (float): initial velocity of car (meters/second)
+        distance_of_travel (float): distance overwhich the car travels (meters)
+        motor_power (float): power output (or input) by motor (Watts)
+        motor_efficiency (float): efficiency of motor (unitless)
+        wheel_radius (float): radius of wheels on car (meters)
+        rotational_inertia (float): car's rotational_inertia (kg*m^2)
+        mass (float): mass of car (kg)
+        drag_coefficient (float): coefficient of drag of car (unitless)
+        frontal_area (float): frontal area of car (meters^2)
+        wheel_pressure_bar (float): wheel pressure (bar)
+        air_density (float): density of air car is travling through (kg/meters^3)
 
     Returns:
         output (PhysicsCalculationOutput): output data of the segment
@@ -169,12 +173,17 @@ def free_acceleration_calculation(initial_velocity,
                                                               air_density,
                                                               frontal_area)
 
+    rolling_resistance_force = \
+        rolling_resistance_force_calculation(mass, initial_velocity, wheel_pressure_bar)
+    rolling_resistance_energy = rolling_resistance_force * time_of_segment
+
     final_kinetic_energy_term = 0.5 * (rotational_inertia * ((1/wheel_radius) ** 2) +
                                        mass)
 
     energy_sum = (initial_linear_kinetic_energy +
                   initial_rotational_kinetic_energy -
-                  drag_energy +
+                  drag_energy -
+                  rolling_resistance_energy +
                   energy_motor)
     final_velocity = sqrt(energy_sum /
                           final_kinetic_energy_term)
@@ -216,6 +225,7 @@ def constrained_velocity_calculation(initial_velocity,
                                      wheel_radius,
                                      drag_coefficient,
                                      frontal_area,
+                                     wheel_pressure_bar,
                                      air_density):
     """Calculate amount of energy used over a distance if the
     velocity of the car is constrained.
@@ -227,13 +237,17 @@ def constrained_velocity_calculation(initial_velocity,
         - No change in elevation
 
     Args:
-        initial_velocity (double): initial velocity of car in the segment (meters/second)
-        final_velocity (double): final velocity of the car in the segment (meters/second)
-        distance_of_travel (double): distance overwhich the car travels (meters)
-        motor_efficiency (double): efficiency of motor (unitless)
-        drag_coefficient (double): coefficient of drag of car (unitless)
-        frontal_area (double): frontal area of car (meters^2)
-        air_density (double): density of air car is travling through (kg/meters^3)
+        initial_velocity (float): initial velocity of car in the segment (meters/second)
+        final_velocity (float): final velocity of the car in the segment (meters/second)
+        distance_of_travel (float): distance overwhich the car travels (meters)
+        motor_efficiency (float): efficiency of motor (unitless)
+        rotational_inertia (float): car's rotational_inertia (kg*m^2)
+        mass (float): mass of car (kg)
+        wheel_radius (float): radius of wheels on car (meters)
+        drag_coefficient (float): coefficient of drag of car (unitless)
+        frontal_area (float): frontal area of car (meters^2)
+        wheel_pressure_bar (float): pressure of tires (bar)
+        air_density (float): density of air car is travling through (kg/meters^3)
 
     Returns:
         output (PhysicsCalculationOutput): output data of the segment
@@ -252,6 +266,10 @@ def constrained_velocity_calculation(initial_velocity,
                                         frontal_area)
     drag_energy = drag_force * distance_of_travel
 
+    rolling_resistance_force = \
+        rolling_resistance_force_calculation(mass, initial_velocity, wheel_pressure_bar)
+    rolling_resistance_energy = rolling_resistance_force * time_of_segment
+
     initial_linear_kinetic_energy = kinetic_energy_calculation(mass, initial_velocity)
     initial_rotational_kinetic_energy = \
         rotational_kinetic_energy_calculation(rotational_inertia, wheel_radius, initial_velocity)
@@ -262,7 +280,7 @@ def constrained_velocity_calculation(initial_velocity,
 
     energy_motor = (final_rotational_kinetic_energy + final_linear_kinetic_energy -
                     initial_rotational_kinetic_energy - initial_linear_kinetic_energy
-                    + drag_energy)
+                    + drag_energy + rolling_resistance_energy)
 
     logger.debug("acc, {}, final_v, {}, initial_v, {}, time, {}, distance, {}"
                  .format(acceleration, final_velocity, initial_velocity,
@@ -308,6 +326,7 @@ def max_positive_power_physics_simulation(initial_velocity,
                                             car["mass"],
                                             car["drag_coefficient"],
                                             car["frontal_area"],
+                                            car["wheel_pressure_bar"],
                                             air_density)
     return results
 
@@ -341,6 +360,7 @@ def max_negative_power_physics_simulation(initial_velocity,
                                             car["mass"],
                                             car["drag_coefficient"],
                                             car["frontal_area"],
+                                            car["wheel_pressure_bar"],
                                             air_density)
     return results
 
@@ -378,5 +398,6 @@ def constrained_velocity_physics_simulation(initial_velocity,
                                                car["wheel_radius"],
                                                car["drag_coefficient"],
                                                car["frontal_area"],
+                                               car["wheel_pressure_bar"],
                                                air_density)
     return results
