@@ -209,6 +209,7 @@ class SimulationThread(QThread):
         drag_coefficient = 0.4
         frontal_area = 7  # m^2
         air_density = 1  # kg/m^3
+        wheel_pressure_bar = 3 # bar
 
         track = TrackProperties()
         track.set_air_density(air_density)
@@ -225,7 +226,8 @@ class SimulationThread(QThread):
         car.set_car_parameters(mass=mass, rotational_inertia=rotational_inertia,
                                motor_power=battery_power, motor_efficiency=motor_efficiency,
                                battery_capacity=10, drag_coefficient=drag_coefficient,
-                               frontal_area=frontal_area, wheel_radius=wheel_radius)
+                               frontal_area=frontal_area, wheel_radius=wheel_radius,
+                               wheel_pressure_bar=wheel_pressure_bar)
 
         self._data_store.initialize_lap_lists(len(track.distance_list))
         self._data_store.set_car_properties(car)
