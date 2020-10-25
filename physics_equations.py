@@ -5,6 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+GRAVITY = 9.81  # m/s^2
 
 class PhysicsCalculationOutput():
     """Class that contains the data
@@ -46,6 +47,29 @@ def drag_force_calculation(coefficient_drag, velocity, air_density, frontal_area
     return drag_force
 
 
+def rolling_resistance_force_calculation(mass_kg, velocity_m_s, tire_press_bar):
+    """Calculation of the rolling resistance due to tire friction.
+    Reference:
+    https://www.engineeringtoolbox.com/rolling-friction-resistance-d_1303.html
+    https://en.wikipedia.org/wiki/Rolling_resistance
+
+    Args:
+        mass_kg (float): mass of car in kg
+        tire_pressure_bar (float): pressure in tires in bar
+        velocity (float): velocity of car in m/s
+
+    Returns:
+        rolling_resistance_force_newton (float): force of rolling resistance in newtons
+
+    Note that the reference equation gives speed in km/h so a conversion is necessary
+    """
+    velocity_km_h = velocity_m_s / 3.6  # 1000 m per km,  3600 sec per hr
+    coefficient_rolling_resistance = (0.005 + (1/tire_press_bar)*(0.01 + 0.0095 * (velocity_hm_h/100) ** 2)
+    rolling_resistance_force_newton = coefficient_rolling_resistance * mass_kg * GRAVITY
+    logger.debug("rolling_resistance calc, mass, {}, v, {}, tire_press, {}, force, {}"
+                 .format(mass_kg, velocity_m_s, tire_press_bar, rolling_resistance_force_newton))
+    return rolling_resistance_force_newton
+
 # Kinetic energy change from velocity_start to velocity_end of and object with mass
 def kinetic_energy_change_calculation(velocity_end, velocity_start, mass):
     kinetic_energy_change = 0.5*mass*(velocity_end ** 2 - velocity_start ** 2)
@@ -85,7 +109,6 @@ def time_of_travel_calculation(velocity, distance):
         raise ZeroDivisionError
     return time_of_travel
 
-
 def free_acceleration_calculation(initial_velocity,
                                   distance_of_travel,
                                   motor_power,
@@ -113,7 +136,7 @@ def free_acceleration_calculation(initial_velocity,
         - Drag energy
         - Motor efficiency
 
-    See <somewhere-else> for proof of physics equations
+    See the e lemons google drive for proof of physics equations
 
     Args:
         initial_velocity (double): initial velocity of car (meters/second)
