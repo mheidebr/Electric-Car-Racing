@@ -263,7 +263,7 @@ def main():
                            battery_capacity=10, drag_coefficient=drag_coefficient,
                            frontal_area=frontal_area, wheel_radius=wheel_radius)
 
-    data_store.initialize_lap_profiles(len(track.distance_list))
+    data_store.initialize_lap_lists(len(track.distance_list))
     data_store.set_car_properties(car)
     data_store.set_track_properties(track)
 
