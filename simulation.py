@@ -43,7 +43,7 @@ def racing_simulation(data_store):
     if not data_store.exit_event.is_set():
         lap_results = data_store.get_lap_results()
         car = data_store.get_car_properties()
-        results.laps_per_pit_stop = car["battery_capacity"] / lap_results.motor_energy_profile[-1]
+        results.laps_per_pit_stop = car["battery_capacity"] / lap_results.motor_energy_list[-1]
         results.lap_time = lap_results.end_velocity
         results.lap_results = lap_results
         data_store.set_race_results(results)
@@ -77,7 +77,7 @@ def lap_velocity_simulation(data_store):
     while data_store.get_simulation_index() < list_len:
         if data_store.exit_event.is_set():
             break
-        data_store.get_simulation_index()
+        sim_index = data_store.get_simulation_index()
         distance_of_travel = (track.distance_list[sim_index] -
                               track.distance_list[sim_index - 1])
 
