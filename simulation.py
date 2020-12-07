@@ -51,7 +51,8 @@ from physics_equations import (max_negative_power_physics_simulation,
                                constrained_velocity_physics_simulation,
                                )
 from electric_car_properties import ElectricCarProperties
-from track_properties import TrackProperties
+from track_properties import (TrackProperties,
+                              high_plains_raceway)
 
 logger = logging.getLogger(__name__)
 
