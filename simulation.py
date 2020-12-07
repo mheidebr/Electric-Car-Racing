@@ -51,7 +51,8 @@ from physics_equations import (max_negative_power_physics_simulation,
                                constrained_velocity_physics_simulation,
                                )
 from electric_car_properties import ElectricCarProperties
-from track_properties import TrackProperties
+from track_properties import (TrackProperties,
+                              high_plains_raceway)
 
 logger = logging.getLogger(__name__)
 
@@ -436,15 +437,8 @@ class SimulationThread(QThread):
         track = TrackProperties()
         track.set_air_density(air_density)
 
-        # format: distance (m), max velocity (m/s), constraint type
-        track.add_critical_point(0.0, 10.0, track.FREE_ACCELERATION)
-        track.add_critical_point(5.0, 5.0, track.FREE_ACCELERATION)
-        track.add_critical_point(10.0, 10.0, track.FREE_ACCELERATION)
-        track.add_critical_point(12.0, 12.0, track.FREE_ACCELERATION)
-        track.add_critical_point(16.0, 15.0, track.FREE_ACCELERATION)
-        track.add_critical_point(50.0, 30.0, track.FREE_ACCELERATION)
-        track.add_critical_point(100.0, 30.0, track.FREE_ACCELERATION)
-        #track.add_critical_point(1000.0, 40.0, track.FREE_ACCELERATION)
+        for distance in high_plains_raceway:
+            track.add_critical_point(distance, high_plains_raceway[distance], track.FREE_ACCELERATION)
         track.generate_track_list(segment_distance)
 
         car = ElectricCarProperties()
