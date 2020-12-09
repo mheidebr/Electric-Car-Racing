@@ -43,7 +43,7 @@ class DataStore:
 
     def get_walk_back_counter(self):
         self._lock.lockForRead()
-        temp =deepcopy(self._walk_back_counter)
+        temp = deepcopy(self._walk_back_counter)
         self._lock.unlock()
         return temp
 
