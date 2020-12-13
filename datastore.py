@@ -4,7 +4,6 @@ import threading
 import track_properties
 import electric_car_properties
 from copy import deepcopy
-from PyQt5 import QtGui, QtCore
 from PyQt5.QtCore import *
 
 logger = logging.getLogger(__name__)
@@ -109,7 +108,7 @@ class DataStore:
         self._lock.lockForWrite()
         self._car = car_properties
         self._lock.unlock()
-    
+
     def set_track_properties(self, track_properties):
         self._lock.lockForWrite()
         self._track_properties = track_properties
@@ -237,11 +236,11 @@ class LapVelocitySimulationResults():
         self.physics_results_profile[index] = physics_results
 
         self.distance_list[index] = (self.distance_list[index - 1] +
-                                        physics_results.distance_traveled)
+                                     physics_results.distance_traveled)
         self.time_list[index] = (self.time_list[index - 1] +
-                                    physics_results.time_of_segment)
+                                 physics_results.time_of_segment)
         self.motor_power_list[index] = physics_results.motor_power
         self.motor_energy_list[index] = (self.motor_energy_list[index - 1] +
-                                            physics_results.energy_differential_of_motor)
+                                         physics_results.energy_differential_of_motor)
         self.acceleration_list[index] = physics_results.acceleration
         self.velocity_list[index] = physics_results.final_velocity
