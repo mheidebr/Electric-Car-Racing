@@ -3,6 +3,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# rotational inertia estimation: http://www.hpwizard.com/rotational-inertia.html
 # Make sure all units match! All units should be SI
 class ElectricCarProperties:
     def __init__(self):
@@ -15,6 +16,7 @@ class ElectricCarProperties:
 
         if mass <= 0:
             raise Exception("Invalid Mass {}".format(mass))
+        # rotational inertia estimation: http://www.hpwizard.com/rotational-inertia.html
         elif rotational_inertia <= 0:
             raise Exception("Invalid Rotational Inertia {}".format(rotational_inertia))
         elif motor_power <= 0:
@@ -32,6 +34,7 @@ class ElectricCarProperties:
             raise Exception("Invalid wheel_radius {}".format(wheel_radius))
         else:
             self._car_parameters["mass"] = mass
+            # rotational inertia estimation: http://www.hpwizard.com/rotational-inertia.html
             self._car_parameters["rotational_inertia"] = rotational_inertia
             self._car_parameters["motor_power"] = motor_power
             self._car_parameters["motor_efficiency"] = motor_efficiency
