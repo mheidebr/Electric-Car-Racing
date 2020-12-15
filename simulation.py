@@ -60,12 +60,10 @@ class MainWindow(QWidget):
 
     def __init__(self, *args, **kwargs):
         QWidget.__init__(self, parent=None)
-        # TODO: Change all print statements to logging calls
-        # and let the logging config/argparsing decide whats printed
-        logger.info('MainWindow: __init__')
 
         self.data_store = DataStore()
-        logger.info("MainWindow: Simulation Index = {}".format(self.data_store.get_simulation_index()))
+        logger.info("MainWindow: DataStore initialized",
+                extra={'sim_index': self.data_store.get_simulation_index()})
 
         # Create GUI related resources
         self.setWindowTitle('Race Simulation')
@@ -228,8 +226,13 @@ class MainWindow(QWidget):
         #Display/update the window to display computation status, data, and plots selected by the user
         # This is called periodically because of the signal emitted from PlotRefreshTimingThread
         
+        # TODO current_sim_index is "-1" for the following call 
+        # because the lap_velocity_simulation calculations may be incomplete for the index
+        # when this signal was received and interrupted it. That is, that thread is still 
+        # updating a DataStore data (lists) records  @ simulation_index and not all lists 
+        # have been calculated, so we should just plot upto the last complete record.
         current_sim_index = (self.data_store.get_simulation_index())-1
-        logger.info("MainWindow:signalPlotRefresh Simulation Index = {}".format(current_sim_index))
+        #logger.info("MainWindow:", extra={'sim_index': current_sim_index})
         self.textboxSimulationIndex.setText("{}".format(current_sim_index))
         
         # Get the current data values and update the corresponding display field textbox
@@ -398,7 +401,8 @@ class SimulationThread(QThread):
     """
     @pyqtSlot()
     def thread_start_calculating(self):
-        logger.info('Slot:thread_start_calculating :{}'.format(QThread.currentThread()))
+        logger.info('Slot:thread_start_calculating :', 
+                extra={'sim_index': self._data_store.get_simulation_index()})
         # Now send a signal back to the main window
         self.simulationThreadSignal.emit("Calculating...")
         # "state" variable indicating thread should be calculating
@@ -406,7 +410,8 @@ class SimulationThread(QThread):
 
     @pyqtSlot()
     def thread_stop_calculating(self):
-        logger.info('Slot:thread_stop_calculating :', QThread.currentThread())
+        logger.info('Slot:thread_stop_calculating :', 
+                extra={'sim_index': self._data_store.get_simulation_index()})
         # Now send a signal back to the main window
         self.simulationThreadSignal.emit("Paused")
 
@@ -462,8 +467,7 @@ class SimulationThread(QThread):
         # need to populate the time profile be the same length as the distance list
         # to complete a lap of simulation
         list_len = len(track.distance_list)
-        #print('lap_velocity_simulation: list_len={}'.format(list_len))
-        logger.info('lap_velocity_simulation: list_len={}'.format(list_len))
+        logger.debug('list_len={}'.format(list_len), extra={'sim_index': sim_index})
 
         # TODO - Add self.simulationComputing to loop control to while
         while self._data_store.get_simulation_index() < list_len:
@@ -566,10 +570,11 @@ class SimulationThread(QThread):
             else:
                 # self.simulationComputing is False, so wait for GUI user to indicate proceed
                 time.sleep(1)
-                logger.info('lap_velocity_simulation: waiting for simulationComputing==True')
+                logger.debug("waiting for simulationComputing==True",
+                        extra={'sim_index': sim_index})
         # end of while data_store.get_simulation_index() < list_len:
 
-        logger.info('lap_velocity_simultation: COMPLETE!')
+        logger.info("SIMULATION COMPLETE!", extra={'sim_index': 'N/A'})
         self.simulationThreadSignal.emit("Finished!")
         self._data_store.exit_event.set()
 
@@ -577,7 +582,8 @@ class SimulationThread(QThread):
         # Note: This is never called directly. It is called by Qt once the
         # thread environment with the thread's start() method has been setup,
         # and then runs "continuously"
-        logger.info('SimulationThread: entering cProfile.runctx() ')
+        logger.info("SimulationThread: entering cProfile.runctx() ",
+                extra={'sim_index': 'N/A'})
 
         # profiling tool, look at results with runsnake:
         # https://kupczynski.info/2015/01/16/profiling-python-scripts.html
@@ -601,7 +607,8 @@ class PlotRefreshTimingThread(QThread):
         QThread.__init__(self, parent)
         self.exiting = False
 
-        logger.info('PlotRefreshTimingThread: __init()__')
+        logger.info("PlotRefreshTimingThread: __init()__",
+                extra={'sim_index': 'N/A'})
 
         # TODO connect some signals from the main window to us
         #self.connect(self, QtCore.SIGNAL('To_End',self.processToEnd)
@@ -621,7 +628,8 @@ class PlotRefreshTimingThread(QThread):
         # and then runs "continuously" to do the work of the thread as it's main
         # processing loop
 
-        logger.info('PlotRefreshTimingThread: entering while() ')
+        logger.info("PlotRefreshTimingThread: entering while() ",
+                extra={'sim_index': 'N/A'})
         while True:
             time.sleep(1)
             self.plotRefreshTimingSignal.emit()
@@ -629,6 +637,8 @@ class PlotRefreshTimingThread(QThread):
 
 if __name__ == "__main__":
     MainApp = QApplication(sys.argv)
+    if __name__ == "__main__":
+        configure_logging()
     window = MainWindow()
     window.show()
     sys.exit(MainApp.exec_())
