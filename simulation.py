@@ -62,39 +62,56 @@ class MainWindow(QWidget):
         QWidget.__init__(self, parent=None)
         # TODO: Change all print statements to logging calls
         # and let the logging config/argparsing decide whats printed
-        print('Window: __init__')
+        logger.info('MainWindow: __init__')
 
         self.data_store = DataStore()
-        print("MainWindow: Simulation Index = {}".format(self.data_store.get_simulation_index()))
+        logger.info("MainWindow: Simulation Index = {}".format(self.data_store.get_simulation_index()))
 
         # Create GUI related resources
         self.setWindowTitle('Race Simulation')
-        # create the user controls to run the simulation
-        self.createControls()
+        
+        # create the user play controls and data results graphs to run the simulation
+        self.createUserDisplayControls()
 
         # create placeholder for the plots the SimulationThread will delivering
         # data into.
         self.graphs = pg.GraphicsLayoutWidget(show=True, title="Race Sim plots")
-        self.graphs.resize(1000, 540)
-        self.p1 = self.graphs.addPlot(name="Plot1", title="Velocity")
-        self.p2 = self.graphs.addPlot(name="Plot1", title="Distance")
-        self.p3 = self.graphs.addPlot(name="Plot1", title="Battery Power")
+        self.graphs.resize(1000,540)
+        self.p1 = self.graphs.addPlot(name="Plot1", title="Time (s)")        
+        self.p2 = self.graphs.addPlot(name="Plot2", title="Distance (m)")        
+        self.p2.hide()
+        self.p3 = self.graphs.addPlot(name="Plot3", title="Velocity (m/s)")        
+        self.p3.hide()
+        self.p4 = self.graphs.addPlot(name="Plot4", title="Acceleration (m/s^2)")        
+        self.p4.hide()
+        self.p5 = self.graphs.addPlot(name="Plot5", title="Motor Power")        
+        self.p5.hide()
+        self.p6 = self.graphs.addPlot(name="Plot6", title="Battery Power")        
+        self.p6.hide()
+        self.p7 = self.graphs.addPlot(name="Plot7", title="Battery Energy (joules)")        
+        self.p7.hide()
+        
         self.p2.setXLink(self.p1)
         self.p3.setXLink(self.p1)
-
-        # Layout the major GUI components
-        self.layout = QVBoxLayout()
+        self.p4.setXLink(self.p1)
+        self.p5.setXLink(self.p1)
+        self.p6.setXLink(self.p1)
+        self.p7.setXLink(self.p1)
+        
+        # Layout the major GUI components 
+        #self.layout = QtGui.QVBoxLayout()
+        self.layout = QHBoxLayout()
+        self.layout.addWidget(self.userDisplayControlsGroup)
         self.layout.addWidget(self.graphs)
-        self.layout.addWidget(self.controlsGroup)
         self.setLayout(self.layout)
 
         # Create the instances of our worker threads
         self.simulationThread = SimulationThread(self.data_store)
-        self.plotRefreshThread = PlotRefreshThread()
+        self.plotRefreshTimingThread = PlotRefreshTimingThread()
 
         # Setup the SIGNALs to be received from the worker threads
         self.simulationThread.simulationThreadSignal.connect(self.signalRcvFromSimulationThread)
-        self.plotRefreshThread.plotRefreshSignal.connect(self.signalPlotRefresh)
+        self.plotRefreshTimingThread.plotRefreshTimingSignal.connect(self.signalPlotRefresh)
 
         # TODO - what mechanism and what to do when SimulationThread or dies like
         #       refresh GUI and save/close results file??
@@ -107,27 +124,83 @@ class MainWindow(QWidget):
         self.buttonStop.clicked.connect(self.simulationThread.thread_stop_calculating)
 
         self.simulationThread.start()
-        self.plotRefreshThread.start()
+        self.plotRefreshTimingThread.start()
+        
+    def createUserDisplayControls(self):
+        self.labelDisplayControl = QLabel("Display Control")
 
-    def createControls(self):
         self.labelStatus = QLabel("Status")
         self.textboxStatus = QLineEdit("Initialized", self)
         self.textboxStatus.setReadOnly(True)
         self.buttonRun = QPushButton('Run/Continue', self)
         self.buttonRun.setEnabled(True)
         self.buttonStop = QPushButton('Pause', self)
-        self.buttonStop.setEnabled(True)
+        self.buttonStop.setEnabled(True) 
+        
+        self.labelSimulationIndex = QLabel("Sim. Index")
+        self.textboxSimulationIndex = QLineEdit("0",self)
+        self.textboxSimulationIndex.setReadOnly(False)
 
-        # a spacer to add visual space at the bottom of the gui (not used yet)
-        #controlVerticalSpacer = QtGui.QSpacerItem(40,20, QSizePolicy.Minimum, QSizePolicy.Expanding)
-        self.controlsGroup = QGroupBox('Controls')
-        self.controlsLayout = QGridLayout()
-        self.controlsLayout.addWidget(self.labelStatus,     0, 1)
-        self.controlsLayout.addWidget(self.textboxStatus,   0, 2)
-        self.controlsLayout.addWidget(self.buttonRun,       0, 3)
-        self.controlsLayout.addWidget(self.buttonStop,      0, 4)
-        #self.controlsLayout.addItem(controlVerticalSpacer, 0, 3,QtCore.Qt.AlignTop)
-        self.controlsGroup.setLayout(self.controlsLayout)
+        self.checkboxTime = QCheckBox('Time (s)', self)
+        self.checkboxTime.setChecked(False)
+        self.spinboxTime = QDoubleSpinBox()
+        self.spinboxTime.setReadOnly(True)
+
+        self.checkboxDistance = QCheckBox('Distance (m)', self)
+        self.checkboxDistance.setChecked(False) 
+        self.spinboxDistance = QDoubleSpinBox()
+        self.spinboxDistance.setReadOnly(True)
+
+        self.checkboxVelocity = QCheckBox('Velocity (m/s)', self)
+        self.checkboxVelocity.setChecked(False) 
+        self.spinboxVelocity = QDoubleSpinBox()
+        self.spinboxVelocity.setReadOnly(True)
+
+        self.checkboxAcceleration = QCheckBox('Acceleration (m/s^2)', self)
+        self.checkboxAcceleration.setChecked(False) 
+        self.spinboxAcceleration = QDoubleSpinBox()
+        self.spinboxAcceleration.setReadOnly(True)
+
+        self.checkboxMotorPower = QCheckBox('Motor Power', self)
+        self.checkboxMotorPower.setChecked(False) 
+        self.spinboxMotorPower = QDoubleSpinBox()
+        self.spinboxMotorPower.setReadOnly(True)
+
+        self.checkboxBatteryPower = QCheckBox('Battery Power', self)
+        self.checkboxBatteryPower.setChecked(False) 
+        self.spinboxBatteryPower = QDoubleSpinBox()
+        self.spinboxBatteryPower.setReadOnly(True)
+        
+        self.checkboxBatteryEnergy = QCheckBox('Battery Energy (j)', self)
+        self.checkboxBatteryEnergy.setChecked(False) 
+        self.spinboxBatteryEnergy = QDoubleSpinBox()
+        self.spinboxBatteryEnergy.setReadOnly(True)
+
+        #self.userDisplayControlsGroup = QtGui.QGroupBox('User Display Controls')
+        self.userDisplayControlsGroup = QGroupBox('User Display Controls')
+        #self.userDisplayControlsLayout= QtGui.QGridLayout()
+        self.userDisplayControlsLayout= QGridLayout()
+        self.userDisplayControlsLayout.addWidget(self.labelStatus,              0, 0)
+        self.userDisplayControlsLayout.addWidget(self.textboxStatus,            0, 1)
+        self.userDisplayControlsLayout.addWidget(self.buttonRun,                1, 0)
+        self.userDisplayControlsLayout.addWidget(self.buttonStop,               1, 1)
+        self.userDisplayControlsLayout.addWidget(self.labelSimulationIndex,     2, 0)
+        self.userDisplayControlsLayout.addWidget(self.textboxSimulationIndex,   2, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxTime,             3, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxTime,              3, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxDistance,         4, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxDistance,          4, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxVelocity,         5, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxVelocity,          5, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxAcceleration,     6, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxAcceleration,      6, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxMotorPower,       7, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxMotorPower,        7, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxBatteryPower,     8, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxBatteryPower,      8, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxBatteryEnergy,    9, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxBatteryEnergy,     9, 1)
+        self.userDisplayControlsGroup.setLayout(self.userDisplayControlsLayout)
 
     def simulationThreadResultsDataDisplay(self):
         # TODO placeholder for real work to be done when the SimulationThread (a simulationThread thread)
@@ -152,23 +225,100 @@ class MainWindow(QWidget):
 
     @pyqtSlot()
     def signalPlotRefresh(self):
-        index = self.data_store.get_simulation_index()
-        print("MainWindow:signalPlotRefresh Simulation Index = {}".format(index))
+        #Display/update the window to display computation status, data, and plots selected by the user
+        # This is called periodically because of the signal emitted from PlotRefreshTimingThread
+        
+        current_sim_index = (self.data_store.get_simulation_index())-1
+        logger.info("MainWindow:signalPlotRefresh Simulation Index = {}".format(current_sim_index))
+        self.textboxSimulationIndex.setText("{}".format(current_sim_index))
+        
+        # Get the current data values and update the corresponding display field textbox
+        time = self.data_store.get_time_at_index(current_sim_index)
+        self.spinboxTime.setValue(time)
+        
+        distance = self.data_store.get_distance_at_index(current_sim_index)
+        self.spinboxDistance.setValue(distance)
+        
+        velocity = self.data_store.get_velocity_at_index(current_sim_index)
+        self.spinboxVelocity.setValue(velocity)
+        
+        acceleration = self.data_store.get_acceleration_at_index(current_sim_index)
+        self.spinboxAcceleration.setValue(acceleration)
+        
+        motor_power = self.data_store.get_motor_power_at_index(current_sim_index)
+        self.spinboxMotorPower.setValue(motor_power)
+        
+        battery_power = self.data_store.get_battery_power_at_index(current_sim_index)
+        self.spinboxBatteryPower.setValue(battery_power)
+        # TBD not yet implemented in physics_equations
+        #battery_energy = self.data_store.get_battery_energy_at_index(current_sim_index)
+        #self.spinboxBatteryEnergy.setValue(battery_energy)
+        
+        # Display the data values
+        
         # create a new plot for every point simulated so far
-        x = [z+1 for z in range(self.data_store.get_simulation_index())]
-        _velocity = []
+        x = [z+1 for z in range(current_sim_index)]
+        _time = []
         _distance = []
+        _velocity = []
+        _acceleration = []
+        _motor_power = []
         _battery_power = []
+        _battery_energy = []
         # TODO: build the lists in a function call to the datastore
         # to reduce locking/unlocking overhead
         for z in x:
-            _velocity.append(self.data_store.get_velocity_at_index(z))
+            _time.append(self.data_store.get_time_at_index(z))
             _distance.append(self.data_store.get_distance_at_index(z))
+            _velocity.append(self.data_store.get_velocity_at_index(z))
+            _acceleration.append(self.data_store.get_acceleration_at_index(z))
+            _motor_power.append(self.data_store.get_motor_power_at_index(z))
             _battery_power.append(self.data_store.get_battery_power_at_index(z))
-        self.curve = self.p1.plot(x=x, y=_velocity, name="Plot1", title="Velocity")
-        self.curve = self.p2.plot(x=x, y=_distance, name="Plot1", title="Distance")
-        self.curve = self.p3.plot(x=x, y=_battery_power, name="Plot1", title="Battery Power")
-
+            # TODO not yet implemented in physics_equations
+            #_battery_energy.append(self.data_store.get_battery_energy_at_index(z))
+            
+        
+        self.p1.plot(x=x, y=_time, name="Plot1", title="Time")        
+        
+        # selectively display the plots based on the checkboxes 
+        if self.checkboxDistance.isChecked() == True :
+            self.p2.show()
+            self.p2.plot(x=x, y=_distance, name="Plot2", title="Distance (m)")        
+        else:
+            self.p2.hide()
+            
+        if self.checkboxVelocity.isChecked() == True :
+            self.p3.show()
+            self.p3.plot(x=x, y=_velocity, name="Plot3", title="Velocity (m/sec)")        
+        else:
+            self.p3.hide()
+            
+        if self.checkboxAcceleration.isChecked() == True :
+            self.p4.show()
+            self.p4.plot(x=x, y=_acceleration, name="Plot4", title="Acceleration (m/sec^2)")        
+        else:
+            self.p4.hide()
+            
+        if self.checkboxMotorPower.isChecked() == True :
+            self.p5.show()
+            self.p5.plot(x=x, y=_motor_power, name="Plot5", title="Motor Power")        
+        else:
+            self.p5.hide()
+            
+        if self.checkboxBatteryPower.isChecked() == True :
+            self.p6.show()
+            self.p6.plot(x=x, y=_battery_power, name="Plot6", title="Battery Power")        
+        else:
+            self.p6.hide()
+            
+        """TBD - to be added once Battery Energy is working in physics_equations
+        if self.checkboxBatteryEnergy.isChecked() == True :
+            self.p7.show()
+            self.p7.plot(x=x, y=_battery_energy, name="Plot7", title="Battery Energy (joules)")        
+        else:
+            self.p7.hide()
+        """
+            
 
 class SimulationThread(QThread):
     # Define the Signals we'll be emitting to the MainWindow
@@ -178,6 +328,7 @@ class SimulationThread(QThread):
     def __init__(self, passed_data_store, parent=None):
         QThread.__init__(self, parent)
         self.exiting = False
+        self.setObjectName("SimulationThread")
 
         """ SimulationComputing is used for staring/stopping loop control logic which is
         controlled ( signalled) from the MainWindow.
@@ -190,14 +341,22 @@ class SimulationThread(QThread):
         self._data_store = passed_data_store
         self.initialize_race()
 
-    def __del__(self):
-        # Before a SimulationThread object is destroyed, we need to ensure that it stops processing.
-        # For this reason, we implement the following method in a way that indicates to
-        # the part of the object that performs the processing that it must stop, and waits
+        #print('SimulationThread: __init()__')
+        #print("SimulationThread: Simulation Index = {}".format(self._data_store.get_simulation_index()))
+
+        #connect some signals from the main window to us
+        #self.connect(self, QtCore.SIGNAL('To_End',self.processToEnd)
+
+
+    def __del__(self):    
+        # Before a SimulationThread object is destroyed, we need to ensure that it stops processing. 
+        # For this reason, we implement the following method in a way that indicates to 
+        # the part of the object that performs the processing that it must stop, and waits 
         # until it does so.
         self.exiting = True
         self.wait()
 
+        # rotational inertia estimation: http://www.hpwizard.com/rotational-inertia.html
     def initialize_race(self):
 
         segment_distance = 0.005  # meters, this must be very very small
@@ -239,7 +398,7 @@ class SimulationThread(QThread):
     """
     @pyqtSlot()
     def thread_start_calculating(self):
-        print('Slot:thread_start_calculating :', QThread.currentThread())
+        logger.info('Slot:thread_start_calculating :{}'.format(QThread.currentThread()))
         # Now send a signal back to the main window
         self.simulationThreadSignal.emit("Calculating...")
         # "state" variable indicating thread should be calculating
@@ -247,7 +406,7 @@ class SimulationThread(QThread):
 
     @pyqtSlot()
     def thread_stop_calculating(self):
-        print('Slot:thread_stop_calculating :', QThread.currentThread())
+        logger.info('Slot:thread_stop_calculating :', QThread.currentThread())
         # Now send a signal back to the main window
         self.simulationThreadSignal.emit("Paused")
 
@@ -303,7 +462,8 @@ class SimulationThread(QThread):
         # need to populate the time profile be the same length as the distance list
         # to complete a lap of simulation
         list_len = len(track.distance_list)
-        print('lap_velocity_simulation: list_len={}'.format(list_len))
+        #print('lap_velocity_simulation: list_len={}'.format(list_len))
+        logger.info('lap_velocity_simulation: list_len={}'.format(list_len))
 
         # TODO - Add self.simulationComputing to loop control to while
         while self._data_store.get_simulation_index() < list_len:
@@ -406,10 +566,10 @@ class SimulationThread(QThread):
             else:
                 # self.simulationComputing is False, so wait for GUI user to indicate proceed
                 time.sleep(1)
-                print('lap_velocity_simulation: waiting for simulationComputing==True')
+                logger.info('lap_velocity_simulation: waiting for simulationComputing==True')
         # end of while data_store.get_simulation_index() < list_len:
 
-        print('lap_velocity_simultation: COMPLETE!')
+        logger.info('lap_velocity_simultation: COMPLETE!')
         self.simulationThreadSignal.emit("Finished!")
         self._data_store.exit_event.set()
 
@@ -417,7 +577,7 @@ class SimulationThread(QThread):
         # Note: This is never called directly. It is called by Qt once the
         # thread environment with the thread's start() method has been setup,
         # and then runs "continuously"
-        print('SimulationThread: entering cProfile.runctx() ')
+        logger.info('SimulationThread: entering cProfile.runctx() ')
 
         # profiling tool, look at results with runsnake:
         # https://kupczynski.info/2015/01/16/profiling-python-scripts.html
@@ -427,13 +587,13 @@ class SimulationThread(QThread):
         #cProfile.runctx("racing_simulation(self._data_store)", globals(), locals(), 'profile.out')
         cProfile.runctx("self.racing_simulation()", globals(), locals(), 'profile.out')
 
-
-class PlotRefreshThread(QThread):
-    # Thread responsible for a periodic signal to the MainWindow which when received causes
-    # it to refresh it's plots.
+        
+class PlotRefreshTimingThread(QThread): 
+    # Thread responsible for a periodic signal to the MainWindow which when received causes 
+    # MainWindow to refresh it's plots.
 
     # Define the Signals we'll be emitting to the MainWindow
-    plotRefreshSignal = pyqtSignal()
+    plotRefreshTimingSignal = pyqtSignal()
 
     # start without compution in the simulationThread running
 
@@ -441,13 +601,17 @@ class PlotRefreshThread(QThread):
         QThread.__init__(self, parent)
         self.exiting = False
 
-        print('PlotRefreshThread: __init()__')
+        logger.info('PlotRefreshTimingThread: __init()__')
 
-    def __del__(self):
-        # Before a PlotRefreshThread object is destroyed, we need to ensure that it stops
-        # processing.  For this reason, we implement the following method in a way that
-        # indicates to  the part of the object that performs the processing that it must stop,
-        # and waits until it does so.
+        # TODO connect some signals from the main window to us
+        #self.connect(self, QtCore.SIGNAL('To_End',self.processToEnd)
+
+
+    def __del__(self):    
+        # Before a PlotRefreshTimingThread object is destroyed, we need to ensure that it stops 
+        # processing.  For this reason, we implement the following method in a way that 
+        # indicates to  the part of the object that performs the processing that it must stop,             
+		# and waits until it does so.
         self.exiting = True
         self.wait()
 
@@ -457,10 +621,10 @@ class PlotRefreshThread(QThread):
         # and then runs "continuously" to do the work of the thread as it's main
         # processing loop
 
-        print('PlotRefreshThread: entering while() ')
+        logger.info('PlotRefreshTimingThread: entering while() ')
         while True:
             time.sleep(1)
-            self.plotRefreshSignal.emit()
+            self.plotRefreshTimingSignal.emit()
 
 
 if __name__ == "__main__":
