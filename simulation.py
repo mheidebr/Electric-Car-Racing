@@ -71,7 +71,7 @@ class MainWindow(QWidget):
         # create the user play controls and data results graphs to run the simulation
         self.createUserDisplayControls()
 
-        # create placeholder for the plots the SimulationThread will delivering
+        # create placeholders for the plots MainWindow will delivering (updating)
         # data into.
         self.graphs = pg.GraphicsLayoutWidget(show=True, title="Race Sim plots")
         self.graphs.resize(1000,540)
@@ -89,6 +89,8 @@ class MainWindow(QWidget):
         self.p7 = self.graphs.addPlot(name="Plot7", title="Battery Energy (joules)")        
         self.p7.hide()
         
+        # Links user X-coordinate movements of all plots together. Practically, there has
+        # to be one plot they all link to, and in this case it's self.p1 (Time) b
         self.p2.setXLink(self.p1)
         self.p3.setXLink(self.p1)
         self.p4.setXLink(self.p1)
@@ -261,9 +263,11 @@ class MainWindow(QWidget):
         
         # create a new plot for every point simulated so far
         x = [z+1 for z in range(current_sim_index)]
+        #x = [z for z in range(current_sim_index)]
         _time = []
         _distance = []
         _velocity = []
+        _max_velocity = []
         _acceleration = []
         _motor_power = []
         _battery_power = []
@@ -274,12 +278,22 @@ class MainWindow(QWidget):
             _time.append(self.data_store.get_time_at_index(z))
             _distance.append(self.data_store.get_distance_at_index(z))
             _velocity.append(self.data_store.get_velocity_at_index(z))
+            _max_velocity.append(self.data_store.get_track_max_velocity_at_index(z))
             _acceleration.append(self.data_store.get_acceleration_at_index(z))
             _motor_power.append(self.data_store.get_motor_power_at_index(z))
-            _battery_power.append(self.data_store.get_battery_power_at_index(z))
+        #    _battery_power.append(self.data_store.get_battery_power_at_index(z))
             # TODO not yet implemented in physics_equations
             #_battery_energy.append(self.data_store.get_battery_energy_at_index(z))
-            
+        #print('x={} current_sim_index = {}'.format(x, current_sim_index))
+        #_time = self.data_store.get_time_list(current_sim_index+1)
+        #_distance = self.data_store.get_distance_list(current_sim_index+1)
+        #_velocity = self.data_store.get_velocity_list(current_sim_index+1)
+        #_max_velocity = self.data_store.get_track_max_velocity_list(current_sim_index+1)
+        #_acceleration = self.data_store.get_acceleration_list(current_sim_index+1)
+        #_motor_power = self.data_store.get_motor_power_list(current_sim_index+1)
+        #_battery_power = self.data_store.get_battery_power_list(current_sim_index+1)
+        #TODO not yet implemented
+        #_battery_energy = self.data_store.get_battery_energy_list(current_sim_index)
         
         self.p1.plot(x=x, y=_time, name="Plot1", title="Time")        
         
@@ -292,7 +306,9 @@ class MainWindow(QWidget):
             
         if self.checkboxVelocity.isChecked() == True :
             self.p3.show()
+            self.p3.plot(x=x, y=_max_velocity, name="Plot3", title="Max Velocity (m/sec)", pen='r')
             self.p3.plot(x=x, y=_velocity, name="Plot3", title="Velocity (m/sec)")        
+            
         else:
             self.p3.hide()
             
@@ -379,9 +395,9 @@ class SimulationThread(QThread):
         track.add_critical_point(0.0, 10.0, track.FREE_ACCELERATION)
         track.add_critical_point(5.0, 5.0, track.FREE_ACCELERATION)
         track.add_critical_point(10.0, 10.0, track.FREE_ACCELERATION)
-        track.add_critical_point(12.0, 25.0, track.FREE_ACCELERATION)
-        track.add_critical_point(16.0, 55.0, track.FREE_ACCELERATION)
-        track.add_critical_point(50.0, 80.0, track.FREE_ACCELERATION)
+        track.add_critical_point(12.0, 12.0, track.FREE_ACCELERATION)
+        track.add_critical_point(16.0, 15.0, track.FREE_ACCELERATION)
+        track.add_critical_point(50.0, 40.0, track.FREE_ACCELERATION)
         track.generate_track_list(segment_distance)
 
         car = ElectricCarProperties()
@@ -617,8 +633,8 @@ class PlotRefreshTimingThread(QThread):
     def __del__(self):    
         # Before a PlotRefreshTimingThread object is destroyed, we need to ensure that it stops 
         # processing.  For this reason, we implement the following method in a way that 
-        # indicates to  the part of the object that performs the processing that it must stop,             
-		# and waits until it does so.
+        # indicates to  the part of the object that performs the processing that it must stop,
+        # and waits until it does so.
         self.exiting = True
         self.wait()
 
@@ -631,7 +647,7 @@ class PlotRefreshTimingThread(QThread):
         logger.info("PlotRefreshTimingThread: entering while() ",
                 extra={'sim_index': 'N/A'})
         while True:
-            time.sleep(1)
+            time.sleep(0.25)
             self.plotRefreshTimingSignal.emit()
 
 
