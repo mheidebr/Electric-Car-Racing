@@ -143,11 +143,11 @@ class DataStore:
     def get_time_list(self, num_index_samples):
         self._lock.lockForRead()
         try:
-            _time = self._lap_simulation_results.time_list[num_index_samples]
+            _time = self._lap_simulation_results.time_list[0:num_index_samples]
         except IndexError:
-            logger.info("index out of range: {}, returning last time",
+            logger.error("index out of range: {}, returning last time",
                     extra={'sim_index':num_index_samples})
-            _time = self._lap_simulation_results.time_list[-1]
+            _time = self._lap_simulation_results.time_list
         temp = deepcopy(_time)
         self._lock.unlock()
         return temp
@@ -157,7 +157,7 @@ class DataStore:
         try:
             _velocity = self._lap_simulation_results.velocity_list[index]
         except IndexError:
-            logger.info("index out of range: {}, returning last velocity",
+            logger.error("index out of range: {}, returning last velocity",
                     extra={'sim_index':index})
             _velocity = self._lap_simulation_results.velocity_list[-1]
         temp = deepcopy(_velocity)
@@ -167,11 +167,11 @@ class DataStore:
     def get_velocity_list(self, num_index_samples):
         self._lock.lockForRead()
         try:
-            _velocity = self._lap_simulation_results.velocity_list[num_index_samples]
+            _velocity = self._lap_simulation_results.velocity_list[0:num_index_samples]
         except IndexError:
-            logger.info("index out of range: {}, returning last velocity",
+            logger.error("index out of range: {}, returning last velocity",
                     extra={'sim_index':num_index_samples})
-            _velocity = self._lap_simulation_results.velocity_list[-1]
+            _velocity = self._lap_simulation_results.velocity_list
         temp = deepcopy(_velocity)
         self._lock.unlock()
         return temp
@@ -181,7 +181,7 @@ class DataStore:
         try:
             _acceleration = self._lap_simulation_results.acceleration_list[index]
         except IndexError:
-            logger.info("index out of range: {}, returning last acceleration",
+            logger.error("index out of range: {}, returning last acceleration",
                     extra={'sim_index':index})
             _acceleration = self._lap_simulation_results.acceleration_list[-1]
         temp = deepcopy(_acceleration)
@@ -191,11 +191,11 @@ class DataStore:
     def get_acceleration_list(self, num_index_samples):
         self._lock.lockForRead()
         try:
-            _acceleration = self._lap_simulation_results.acceleration_list[num_index_samples]
+            _acceleration = self._lap_simulation_results.acceleration_list[0:num_index_samples]
         except IndexError:
-            logger.info("index out of range: {}, returning last acceleration",
+            logger.error("index out of range: {}, returning last acceleration",
                     extra={'sim_index':num_index_samples})
-            _acceleration = self._lap_simulation_results.acceleration_list[-1]
+            _acceleration = self._lap_simulation_results.acceleration_list
         temp = deepcopy(_acceleration)
         self._lock.unlock()
         return temp
@@ -205,9 +205,9 @@ class DataStore:
         try:
             _distance = self._lap_simulation_results.distance_list[index]
         except IndexError:
-            logger.info("index out of range: {}, returning last distance",
+            logger.error("index out of range: {}, returning last distance",
                     extra={'sim_index':index})
-            _distance = self._lap_simulation_results.velocity_list[-1]
+            _distance = self._lap_simulation_results.distance_list[-1]
         temp = deepcopy(_distance)
         self._lock.unlock()
         return temp
@@ -217,9 +217,9 @@ class DataStore:
         try:
             _distance = self._lap_simulation_results.distance_list[0:num_index_samples]
         except IndexError:
-            logger.info("index out of range: {}, returning last distance",
+            logger.error("index out of range: {}, returning last distance",
                     extra={'sim_index':num_index_samples})
-            _distance = self._lap_simulation_results.velocity_list[-1]
+            _distance = self._lap_simulation_results.distance_list
         temp = deepcopy(_distance)
         self._lock.unlock()
         return temp
@@ -229,7 +229,7 @@ class DataStore:
         try:
             _battery_power = self._lap_simulation_results.battery_power_list[index]
         except IndexError:
-            logger.info("index out of range: {}, returning last battery_power",
+            logger.error("index out of range: {}, returning last battery_power",
                     extra={'sim_index':index})
             _battery_power = self._lap_simulation_results.battery_power_list[-1]
         temp = deepcopy(_battery_power)
@@ -241,9 +241,9 @@ class DataStore:
         try:
             _battery_power = self._lap_simulation_results.battery_power_list[0:num_index_samples]
         except IndexError:
-            logger.info("index out of range: {}, returning last battery_power",
+            logger.error("index out of range: {}, returning last battery_power",
                     extra={'sim_index':num_index_samples})
-            _battery_power = self._lap_simulation_results.battery_power_list[-1]
+            _battery_power = self._lap_simulation_results.battery_power_list
         temp = deepcopy(_battery_power)
         self._lock.unlock()
         return temp
@@ -253,7 +253,7 @@ class DataStore:
         try:
             _battery_energy = self._lap_simulation_results.battery_energy_list[index]
         except IndexError:
-            logger.info("index out of range: {}, returning last battery_energy",
+            logger.error("index out of range: {}, returning last battery_energy",
                     extra={'sim_index':index})
             _battery_energy = self._lap_simulation_results.battery_energy_list[-1]
         temp = deepcopy(_battery_energy)
@@ -265,9 +265,9 @@ class DataStore:
         try:
             _battery_energy = self._lap_simulation_results.battery_energy_list[0:num_index_samples]
         except IndexError:
-            logger.info("index out of range: {}, returning last battery_energy",
+            logger.error("index out of range: {}, returning last battery_energy",
                     extra={'sim_index':num_index_samples})
-            _battery_energy = self._lap_simulation_results.battery_energy_list[-1]
+            _battery_energy = self._lap_simulation_results.battery_energy_list
         temp = deepcopy(_battery_energy)
         self._lock.unlock()
         return temp
@@ -277,7 +277,7 @@ class DataStore:
         try:
             _motor_power = self._lap_simulation_results.motor_power_list[index]
         except IndexError:
-            logger.info("index out of range: {}, returning last motor_power",
+            logger.error("index out of range: {}, returning last motor_power",
                     extra={'sim_index':index})
             _motor_power = self._lap_simulation_results.motor_power_list[-1]
         temp = deepcopy(_motor_power)
@@ -289,9 +289,9 @@ class DataStore:
         try:
             _motor_power = self._lap_simulation_results.motor_power_list[0:num_index_samples]
         except IndexError:
-            logger.info("index out of range: {}, returning last motor_power",
+            logger.error("index out of range: {}, returning last motor_power",
                     extra={'sim_index':num_index_samples})
-            _motor_power = self._lap_simulation_results.motor_power_list[-1]
+            _motor_power = self._lap_simulation_results.motor_power_list
         temp = deepcopy(_motor_power)
         self._lock.unlock()
         return temp
@@ -301,7 +301,7 @@ class DataStore:
         try:
             _max_velocity = self._track_properties.max_velocity_list[index]
         except IndexError:
-            logger.info("index out of range: {}, returning last max_velocity",
+            logger.error("index out of range: {}, returning last max_velocity",
                     extra={'sim_index':index})
             _max_velocity = self._track_properties.max_velocity_list[-1]
         temp = deepcopy(_max_velocity)
@@ -321,9 +321,9 @@ class DataStore:
         try:
             _max_velocity = self._track_properties.max_velocity_list[0:num_index_samples]
         except IndexError:
-            logger.info("index out of range: {}, returning last max_velocity",
+            logger.error("index out of range: {}, returning last max_velocity",
                     extra={'sim_index':num_index_samples})
-            _max_velocity = self._track_properties.max_velocity_list[-1]
+            _max_velocity = self._track_properties.max_velocity_list
         temp = deepcopy(_max_velocity)
         self._lock.unlock()
         return temp
