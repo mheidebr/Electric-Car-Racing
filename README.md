@@ -57,12 +57,12 @@ The things that I did to get `cProfile` and `runsnake` to work for me are docume
 
 To view do the following things:
 ## Install runsnake
-Install packages as follows:
-```$ sudo apt-get install python-wxgtk2.8 python-wxtools wx2.8-doc wx2.8-examples wx2.8-headers wx2.8-i18n
-$ sudo easy-install SquareMap RunSnakeRun```
+# On Ubuntu 20.04 Install the runsnake app and associated packages as follows:
+$ sudo apt install runsnakerun
+# Verify the installation: `which runsnake` should return something in your $PATH
+$ which runsnake
 
-Verify the installation: `which runsnake` should return something in your $PATH
-
-## Run runsnake
-call runsnake with `profile.out` as an argument: `runsnake profile.out`
-That should do it!
+# Run runsnake
+# call runsnake with `profile.out` as an argument: `runsnake profile.out`
+$ runsnake profile.out
+# That should do it!
