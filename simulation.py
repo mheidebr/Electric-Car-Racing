@@ -227,117 +227,110 @@ class MainWindow(QWidget):
     def signalPlotRefresh(self):
         #Display/update the window to display computation status, data, and plots selected by the user
         # This is called periodically because of the signal emitted from PlotRefreshTimingThread
-
-        # TODO current_sim_index is "-1" for the following call
-        # because the lap_velocity_simulation calculations may be incomplete for the index
-        # when this signal was received and interrupted it. That is, that thread is still
-        # updating a DataStore data (lists) records  @ simulation_index and not all lists
-        # have been calculated, so we should just plot upto the last complete record.
-        current_sim_index = (self.data_store.get_simulation_index())-1
-        #logger.info("MainWindow:", extra={'sim_index': current_sim_index})
+        current_sim_index = (self.data_store.get_simulation_index())
+        logger.info("MainWindow:", extra={'sim_index': current_sim_index})
         self.textboxSimulationIndex.setText("{}".format(current_sim_index))
-
-        # Get the current data values and update the corresponding display field textbox
-        time = self.data_store.get_time_at_index(current_sim_index)
-        self.spinboxTime.setValue(time)
-
-        distance = self.data_store.get_distance_at_index(current_sim_index)
-        self.spinboxDistance.setValue(distance)
-
-        velocity = self.data_store.get_velocity_at_index(current_sim_index)
-        self.spinboxVelocity.setValue(velocity)
-
-        acceleration = self.data_store.get_acceleration_at_index(current_sim_index)
-        self.spinboxAcceleration.setValue(acceleration)
-
-        motor_power = self.data_store.get_motor_power_at_index(current_sim_index)
-        self.spinboxMotorPower.setValue(motor_power)
-
-        battery_power = self.data_store.get_battery_power_at_index(current_sim_index)
-        self.spinboxBatteryPower.setValue(battery_power)
-        # TBD not yet implemented in physics_equations
-        #battery_energy = self.data_store.get_battery_energy_at_index(current_sim_index)
-        #self.spinboxBatteryEnergy.setValue(battery_energy)
-
-        # Display the data values
-
-        # create a new plot for every point simulated so far
-        x = [z+1 for z in range(current_sim_index)]
-        #x = [z for z in range(current_sim_index)]
-        _time = []
-        _distance = []
-        _velocity = []
-        _max_velocity = []
-        _acceleration = []
-        _motor_power = []
-        _battery_power = []
-        _battery_energy = []
-        # TODO: build the lists in a function call to the datastore
-        # to reduce locking/unlocking overhead
-        for z in x:
-            _time.append(self.data_store.get_time_at_index(z))
-            _distance.append(self.data_store.get_distance_at_index(z))
-            _velocity.append(self.data_store.get_velocity_at_index(z))
-            _max_velocity.append(self.data_store.get_track_max_velocity_at_index(z))
-            _acceleration.append(self.data_store.get_acceleration_at_index(z))
-            _motor_power.append(self.data_store.get_motor_power_at_index(z))
-        #    _battery_power.append(self.data_store.get_battery_power_at_index(z))
-            # TODO not yet implemented in physics_equations
-            #_battery_energy.append(self.data_store.get_battery_energy_at_index(z))
-        #print('x={} current_sim_index = {}'.format(x, current_sim_index))
-        #_time = self.data_store.get_time_list(current_sim_index+1)
-        #_distance = self.data_store.get_distance_list(current_sim_index+1)
-        #_velocity = self.data_store.get_velocity_list(current_sim_index+1)
-        #_max_velocity = self.data_store.get_track_max_velocity_list(current_sim_index+1)
-        #_acceleration = self.data_store.get_acceleration_list(current_sim_index+1)
-        #_motor_power = self.data_store.get_motor_power_list(current_sim_index+1)
-        #_battery_power = self.data_store.get_battery_power_list(current_sim_index+1)
-        #TODO not yet implemented
-        #_battery_energy = self.data_store.get_battery_energy_list(current_sim_index)
-
-        self.p1.plot(x=x, y=_time, name="Plot1", title="Time")
-
-        # selectively display the plots based on the checkboxes
-        if self.checkboxDistance.isChecked() == True:
-            self.p2.show()
-            self.p2.plot(x=x, y=_distance, name="Plot2", title="Distance (m)")
-        else:
-            self.p2.hide()
-
-        if self.checkboxVelocity.isChecked() == True:
-            self.p3.show()
-            self.p3.plot(x=x, y=_max_velocity, name="Plot3", title="Max Velocity (m/sec)", pen='r')
-            self.p3.plot(x=x, y=_velocity, name="Plot3", title="Velocity (m/sec)")
-
-        else:
-            self.p3.hide()
-
-        if self.checkboxAcceleration.isChecked() == True:
-            self.p4.show()
-            self.p4.plot(x=x, y=_acceleration, name="Plot4", title="Acceleration (m/sec^2)")        
-        else:
-            self.p4.hide()
-
-        if self.checkboxMotorPower.isChecked() == True:
-            self.p5.show()
-            self.p5.plot(x=x, y=_motor_power, name="Plot5", title="Motor Power")        
-        else:
-            self.p5.hide()
-
-        if self.checkboxBatteryPower.isChecked() == True:
-            self.p6.show()
-            self.p6.plot(x=x, y=_battery_power, name="Plot6", title="Battery Power")        
-        else:
-            self.p6.hide()
-
-        """TBD - to be added once Battery Energy is working in physics_equations
-        if self.checkboxBatteryEnergy.isChecked() == True :
-            self.p7.show()
-            self.p7.plot(x=x, y=_battery_energy, name="Plot7", title="Battery Energy (joules)")        
-        else:
-            self.p7.hide()
+        
         """
-
+        Only refresh data if the simulations calculations have begun, indicated by 
+        current_sim-index > 0
+        Note: current_sim_index is descremented "-1" for the following calls
+        because the lap_velocity_simulation calculations may be incomplete for the index
+        when this "plot" signal was received and interrupted it. That is, the 
+        SimulationThread is/could be still updating a DataStore data (lists) records  
+        simulation_index and not all lists # have been calculated, so we should 
+        just plot upto the last complete record.
+        """
+        if current_sim_index > 0 :
+            
+            # Get the current data values and update the corresponding display field textbox
+            time = self.data_store.get_time_at_index(current_sim_index-1)
+            self.spinboxTime.setValue(time)
+            
+            distance = self.data_store.get_distance_at_index(current_sim_index-1)
+            self.spinboxDistance.setValue(distance)
+            
+            velocity = self.data_store.get_velocity_at_index(current_sim_index-1)
+            self.spinboxVelocity.setValue(velocity)
+            
+            acceleration = self.data_store.get_acceleration_at_index(current_sim_index-1)
+            self.spinboxAcceleration.setValue(acceleration)
+            
+            motor_power = self.data_store.get_motor_power_at_index(current_sim_index-1)
+            self.spinboxMotorPower.setValue(motor_power)
+            
+            battery_power = self.data_store.get_battery_power_at_index(current_sim_index-1)
+            self.spinboxBatteryPower.setValue(battery_power)
+            # TBD not yet implemented in physics_equations
+            #battery_energy = self.data_store.get_battery_energy_at_index(current_sim_index-1)
+            #self.spinboxBatteryEnergy.setValue(battery_energy)
+            
+            # Display the data values
+            
+            # create a new plot for every point simulated so far
+            x = [z for z in range(current_sim_index)]
+            _time = []
+            _distance = []
+            _velocity = []
+            _max_velocity = []
+            _acceleration = []
+            _motor_power = []
+            _battery_power = []
+            _battery_energy = []
+            
+            _time = self.data_store.get_time_list(current_sim_index)
+            _distance = self.data_store.get_distance_list(current_sim_index)
+            _velocity = self.data_store.get_velocity_list(current_sim_index)
+            _max_velocity = self.data_store.get_track_max_velocity_list(current_sim_index)
+            _acceleration = self.data_store.get_acceleration_list(current_sim_index)
+            _motor_power = self.data_store.get_motor_power_list(current_sim_index)
+            _battery_power = self.data_store.get_battery_power_list(current_sim_index)
+            #TODO not yet implemented
+            #_battery_energy = self.data_store.get_battery_energy_list(current_sim_index)
+            
+            self.p1.plot(x=x, y=_time, name="Plot1", title="Time")        
+            
+            # selectively display the plots based on the checkboxes 
+            if self.checkboxDistance.isChecked() == True :
+                self.p2.show()
+                self.p2.plot(x=x, y=_distance, name="Plot2", title="Distance (m)")        
+            else:
+                self.p2.hide()
+                
+            if self.checkboxVelocity.isChecked() == True :
+                self.p3.show()
+                self.p3.plot(x=x, y=_max_velocity, name="Plot3", title="Max Velocity (m/sec)", pen='r')
+                self.p3.plot(x=x, y=_velocity, name="Plot3", title="Velocity (m/sec)")        
+                
+            else:
+                self.p3.hide()
+                
+            if self.checkboxAcceleration.isChecked() == True :
+                self.p4.show()
+                self.p4.plot(x=x, y=_acceleration, name="Plot4", title="Acceleration (m/sec^2)")        
+            else:
+                self.p4.hide()
+                
+            if self.checkboxMotorPower.isChecked() == True :
+                self.p5.show()
+                self.p5.plot(x=x, y=_motor_power, name="Plot5", title="Motor Power")        
+            else:
+                self.p5.hide()
+                
+            if self.checkboxBatteryPower.isChecked() == True :
+                self.p6.show()
+                self.p6.plot(x=x, y=_battery_power, name="Plot6", title="Battery Power")        
+            else:
+                self.p6.hide()
+                
+            """TBD - to be added once Battery Energy is working in physics_equations
+            if self.checkboxBatteryEnergy.isChecked() == True :
+                self.p7.show()
+                self.p7.plot(x=x, y=_battery_energy, name="Plot7", title="Battery Energy (joules)")        
+            else:
+                self.p7.hide()
+            """
+        
 
 class SimulationThread(QThread):
     # Define the Signals we'll be emitting to the MainWindow
@@ -479,18 +472,17 @@ class SimulationThread(QThread):
         air_density = track.get_air_density()
         car = self._data_store.get_car_properties()
 
-        sim_index = self._data_store.get_simulation_index()
         # need to populate the time profile be the same length as the distance list
         # to complete a lap of simulation
         list_len = len(track.distance_list)
-        logger.debug('list_len={}'.format(list_len), extra={'sim_index': sim_index})
+        logger.debug('track.distance_list length={}'.format(list_len), 
+                extra={'sim_index': self._data_store.get_simulation_index()})
 
         # TODO - Add self.simulationComputing to loop control to while
         while self._data_store.get_simulation_index() < list_len:
             sim_index = self._data_store.get_simulation_index()
-            #print('lap_velocity_simulation: simulation_index={}'.format(sim_index))
 
-            # only continue simulation if the GUI says to do so.
+            # only continue simulation computing if the GUI says to do so.
             if (self.simulationComputing == True):
                 if self._data_store.exit_event.is_set():
                     break
@@ -512,8 +504,8 @@ class SimulationThread(QThread):
                                 extra={'sim_index': self._data_store.get_simulation_index()})
                     max_velocity_constraint = track.max_velocity_list[sim_index]
                     while get_velocity(sim_index) > max_velocity_constraint:
-                        """This while loop's pupose is to recalculate a portion of the
-                        car's car profile because the car ended up going to fast at a point on the
+                        """This while loop's purpose is to recalculate a portion of the
+                        car's car profile because the car ended up going too fast at a point on the
                         track. To recalculate the following happens:
 
                         1. a "walk back" index is used to track how far back the recalculation occurs
@@ -578,14 +570,17 @@ class SimulationThread(QThread):
                             logger.info("constrained velocity equation accepted",
                                         extra={'sim_index': sim_index})
                             add_physics_result_to_datastore(physics_results, sim_index)
+                        #end of while while get_velocity(sim_index) > max_velocity_constraint:
 
-                    # reset walk back index
+                    
+                    # walk back complete, reset walk back index for next time
                     self._data_store.reset_walk_back_counter()
 
+                # completed calculation for the latest simulation index,
                 self._data_store.increment_simulation_index()
             else:
                 # self.simulationComputing is False, so wait for GUI user to indicate proceed
-                time.sleep(1)
+                time.sleep(0.1)
                 logger.debug("waiting for simulationComputing==True",
                         extra={'sim_index': sim_index})
         # end of while data_store.get_simulation_index() < list_len:
@@ -645,14 +640,14 @@ class PlotRefreshTimingThread(QThread):
         logger.info("PlotRefreshTimingThread: entering while() ",
                 extra={'sim_index': 'N/A'})
         while True:
-            time.sleep(0.25)
+            time.sleep(0.1)
             self.plotRefreshTimingSignal.emit()
 
 
 if __name__ == "__main__":
     MainApp = QApplication(sys.argv)
-    if __name__ == "__main__":
-        configure_logging()
+    #if __name__ == "__main__":
+    #    configure_logging()
     window = MainWindow()
     window.show()
     sys.exit(cProfile.runctx("MainApp.exec_()", globals(), locals(), 'profile-display.out'))
