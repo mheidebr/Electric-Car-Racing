@@ -205,6 +205,7 @@ class DataStore:
         try:
             _distance = self._lap_simulation_results.distance_list[index]
         except IndexError:
+            print('get_distance_at_index: index={}',format(index))
             logger.error("index out of range: {}, returning last distance",
                     extra={'sim_index':index})
             _distance = self._lap_simulation_results.distance_list[-1]
@@ -217,6 +218,7 @@ class DataStore:
         try:
             _distance = self._lap_simulation_results.distance_list[0:num_index_samples]
         except IndexError:
+            print('get_distance_list: num_index_samples={}',format(num_index_samples))
             logger.error("index out of range: {}, returning last distance",
                     extra={'sim_index':num_index_samples})
             _distance = self._lap_simulation_results.distance_list
