@@ -74,21 +74,21 @@ class MainWindow(QWidget):
         # create placeholders for the plots MainWindow will delivering (updating)
         # data into.
         self.graphs = pg.GraphicsLayoutWidget(show=True, title="Race Sim plots")
-        self.graphs.resize(1000,540)
-        self.p1 = self.graphs.addPlot(name="Plot1", title="Time (s)")        
-        self.p2 = self.graphs.addPlot(name="Plot2", title="Distance (m)")        
+        self.graphs.resize(1000, 540)
+        self.p1 = self.graphs.addPlot(name="Plot1", title="Time (s)")
+        self.p2 = self.graphs.addPlot(name="Plot2", title="Distance (m)")
         self.p2.hide()
-        self.p3 = self.graphs.addPlot(name="Plot3", title="Velocity (m/s)")        
+        self.p3 = self.graphs.addPlot(name="Plot3", title="Velocity (m/s)")
         self.p3.hide()
-        self.p4 = self.graphs.addPlot(name="Plot4", title="Acceleration (m/s^2)")        
+        self.p4 = self.graphs.addPlot(name="Plot4", title="Acceleration (m/s^2)")
         self.p4.hide()
-        self.p5 = self.graphs.addPlot(name="Plot5", title="Motor Power")        
+        self.p5 = self.graphs.addPlot(name="Plot5", title="Motor Power")
         self.p5.hide()
-        self.p6 = self.graphs.addPlot(name="Plot6", title="Battery Power")        
+        self.p6 = self.graphs.addPlot(name="Plot6", title="Battery Power")
         self.p6.hide()
-        self.p7 = self.graphs.addPlot(name="Plot7", title="Battery Energy (joules)")        
+        self.p7 = self.graphs.addPlot(name="Plot7", title="Battery Energy (joules)")
         self.p7.hide()
-        
+
         # Links user X-coordinate movements of all plots together. Practically, there has
         # to be one plot they all link to, and in this case it's self.p1 (Time) b
         self.p2.setXLink(self.p1)
@@ -97,8 +97,8 @@ class MainWindow(QWidget):
         self.p5.setXLink(self.p1)
         self.p6.setXLink(self.p1)
         self.p7.setXLink(self.p1)
-        
-        # Layout the major GUI components 
+
+        # Layout the major GUI components
         #self.layout = QtGui.QVBoxLayout()
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.userDisplayControlsGroup)
@@ -125,7 +125,7 @@ class MainWindow(QWidget):
 
         self.simulationThread.start()
         self.plotRefreshTimingThread.start()
-        
+
     def createUserDisplayControls(self):
         self.labelDisplayControl = QLabel("Display Control")
 
@@ -136,7 +136,7 @@ class MainWindow(QWidget):
         self.buttonRun.setEnabled(True)
         self.buttonStop = QPushButton('Pause', self)
         self.buttonStop.setEnabled(True) 
-        
+
         self.labelSimulationIndex = QLabel("Sim. Index")
         self.textboxSimulationIndex = QLineEdit("0",self)
         self.textboxSimulationIndex.setReadOnly(False)
@@ -170,7 +170,7 @@ class MainWindow(QWidget):
         self.checkboxBatteryPower.setChecked(False) 
         self.spinboxBatteryPower = QDoubleSpinBox()
         self.spinboxBatteryPower.setReadOnly(True)
-        
+
         self.checkboxBatteryEnergy = QCheckBox('Battery Energy (j)', self)
         self.checkboxBatteryEnergy.setChecked(False) 
         self.spinboxBatteryEnergy = QDoubleSpinBox()
@@ -227,40 +227,40 @@ class MainWindow(QWidget):
     def signalPlotRefresh(self):
         #Display/update the window to display computation status, data, and plots selected by the user
         # This is called periodically because of the signal emitted from PlotRefreshTimingThread
-        
-        # TODO current_sim_index is "-1" for the following call 
+
+        # TODO current_sim_index is "-1" for the following call
         # because the lap_velocity_simulation calculations may be incomplete for the index
-        # when this signal was received and interrupted it. That is, that thread is still 
-        # updating a DataStore data (lists) records  @ simulation_index and not all lists 
+        # when this signal was received and interrupted it. That is, that thread is still
+        # updating a DataStore data (lists) records  @ simulation_index and not all lists
         # have been calculated, so we should just plot upto the last complete record.
         current_sim_index = (self.data_store.get_simulation_index())-1
         #logger.info("MainWindow:", extra={'sim_index': current_sim_index})
         self.textboxSimulationIndex.setText("{}".format(current_sim_index))
-        
+
         # Get the current data values and update the corresponding display field textbox
         time = self.data_store.get_time_at_index(current_sim_index)
         self.spinboxTime.setValue(time)
-        
+
         distance = self.data_store.get_distance_at_index(current_sim_index)
         self.spinboxDistance.setValue(distance)
-        
+
         velocity = self.data_store.get_velocity_at_index(current_sim_index)
         self.spinboxVelocity.setValue(velocity)
-        
+
         acceleration = self.data_store.get_acceleration_at_index(current_sim_index)
         self.spinboxAcceleration.setValue(acceleration)
-        
+
         motor_power = self.data_store.get_motor_power_at_index(current_sim_index)
         self.spinboxMotorPower.setValue(motor_power)
-        
+
         battery_power = self.data_store.get_battery_power_at_index(current_sim_index)
         self.spinboxBatteryPower.setValue(battery_power)
         # TBD not yet implemented in physics_equations
         #battery_energy = self.data_store.get_battery_energy_at_index(current_sim_index)
         #self.spinboxBatteryEnergy.setValue(battery_energy)
-        
+
         # Display the data values
-        
+
         # create a new plot for every point simulated so far
         x = [z+1 for z in range(current_sim_index)]
         #x = [z for z in range(current_sim_index)]
@@ -294,42 +294,42 @@ class MainWindow(QWidget):
         #_battery_power = self.data_store.get_battery_power_list(current_sim_index+1)
         #TODO not yet implemented
         #_battery_energy = self.data_store.get_battery_energy_list(current_sim_index)
-        
-        self.p1.plot(x=x, y=_time, name="Plot1", title="Time")        
-        
-        # selectively display the plots based on the checkboxes 
-        if self.checkboxDistance.isChecked() == True :
+
+        self.p1.plot(x=x, y=_time, name="Plot1", title="Time")
+
+        # selectively display the plots based on the checkboxes
+        if self.checkboxDistance.isChecked() == True:
             self.p2.show()
-            self.p2.plot(x=x, y=_distance, name="Plot2", title="Distance (m)")        
+            self.p2.plot(x=x, y=_distance, name="Plot2", title="Distance (m)")
         else:
             self.p2.hide()
-            
-        if self.checkboxVelocity.isChecked() == True :
+
+        if self.checkboxVelocity.isChecked() == True:
             self.p3.show()
             self.p3.plot(x=x, y=_max_velocity, name="Plot3", title="Max Velocity (m/sec)", pen='r')
-            self.p3.plot(x=x, y=_velocity, name="Plot3", title="Velocity (m/sec)")        
-            
+            self.p3.plot(x=x, y=_velocity, name="Plot3", title="Velocity (m/sec)")
+
         else:
             self.p3.hide()
-            
-        if self.checkboxAcceleration.isChecked() == True :
+
+        if self.checkboxAcceleration.isChecked() == True:
             self.p4.show()
             self.p4.plot(x=x, y=_acceleration, name="Plot4", title="Acceleration (m/sec^2)")        
         else:
             self.p4.hide()
-            
-        if self.checkboxMotorPower.isChecked() == True :
+
+        if self.checkboxMotorPower.isChecked() == True:
             self.p5.show()
             self.p5.plot(x=x, y=_motor_power, name="Plot5", title="Motor Power")        
         else:
             self.p5.hide()
-            
-        if self.checkboxBatteryPower.isChecked() == True :
+
+        if self.checkboxBatteryPower.isChecked() == True:
             self.p6.show()
             self.p6.plot(x=x, y=_battery_power, name="Plot6", title="Battery Power")        
         else:
             self.p6.hide()
-            
+
         """TBD - to be added once Battery Energy is working in physics_equations
         if self.checkboxBatteryEnergy.isChecked() == True :
             self.p7.show()
@@ -337,7 +337,7 @@ class MainWindow(QWidget):
         else:
             self.p7.hide()
         """
-            
+
 
 class SimulationThread(QThread):
     # Define the Signals we'll be emitting to the MainWindow
@@ -606,9 +606,7 @@ class SimulationThread(QThread):
         # this has relatively little overhead for the overall runtime of the program
         # I have only been able to get the runsnake files to work on linux
         # alternative profile results viewer for windows (untried): https://sourceforge.net/projects/qcachegrindwin/
-        #cProfile.runctx("racing_simulation(self._data_store)", globals(), locals(), 'profile.out')
-        cProfile.runctx("self.racing_simulation()", globals(), locals(), 'profile.out')
-
+        cProfile.runctx("self.racing_simulation()", globals(), locals(), 'profile-simulation.out')
         
 class PlotRefreshTimingThread(QThread): 
     # Thread responsible for a periodic signal to the MainWindow which when received causes 
@@ -657,4 +655,4 @@ if __name__ == "__main__":
         configure_logging()
     window = MainWindow()
     window.show()
-    sys.exit(MainApp.exec_())
+    sys.exit(cProfile.runctx("MainApp.exec_()", globals(), locals(), 'profile-display.out'))
