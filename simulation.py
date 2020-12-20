@@ -393,12 +393,8 @@ class SimulationThread(QThread):
         track = TrackProperties()
         track.set_air_density(air_density)
 
-        track.add_critical_point(0.0, 10.0, track.FREE_ACCELERATION)
-        track.add_critical_point(5.0, 5.0, track.FREE_ACCELERATION)
-        track.add_critical_point(10.0, 10.0, track.FREE_ACCELERATION)
-        track.add_critical_point(12.0, 12.0, track.FREE_ACCELERATION)
-        track.add_critical_point(16.0, 15.0, track.FREE_ACCELERATION)
-        track.add_critical_point(50.0, 40.0, track.FREE_ACCELERATION)
+        for distance in high_plains_raceway:
+            track.add_critical_point(distance, high_plains_raceway[distance], track.FREE_ACCELERATION)
         track.generate_track_list(segment_distance)
 
         car = ElectricCarProperties()
