@@ -58,6 +58,9 @@ logger = logging.getLogger(__name__)
 
 class MainWindow(QWidget):
 
+    # define the SIGNALs that MainWindow will send to other threads
+    mainWindowStartCalculatingSignal = pyqtSignal(int)
+
     def __init__(self, *args, **kwargs):
         QWidget.__init__(self, parent=None)
 
@@ -120,24 +123,63 @@ class MainWindow(QWidget):
 
         # Now that the SimulationThread has been created (but not yet running), connect the
         # Button clicked in MainWindow - call a SimulationThread method to do something
-        self.buttonRun.clicked.connect(self.simulationThread.thread_start_calculating)
+        self.buttonRun.clicked.connect(self.createStartCalculatingSignal)
         self.buttonStop.clicked.connect(self.simulationThread.thread_stop_calculating)
+        self.checkboxDistanceBreakpoint.clicked.connect(self.enableBreakpointSpinbox)
 
         self.simulationThread.start()
         self.plotRefreshTimingThread.start()
 
+    def enableBreakpointSpinbox(self):
+        if self.checkboxDistanceBreakpoint.isChecked() == True:
+            self.spinboxDistanceBreakpoint.setEnabled(True)
+            self.spinboxDistanceBreakpoint.setReadOnly(False)
+        else:
+            self.spinboxDistanceBreakpoint.setEnabled(False)
+            self.spinboxDistanceBreakpoint.setReadOnly(True)
+        
+    def createStartCalculatingSignal(self):
+        """
+        Send a SIGNAL to the simulation thread to start the simulation calculations.
+        Based on the user's control settings in the GUI, figure out what "distance" value 
+        to send with the signal to Simulation Thread to start/continue simulation
+
+        "distance" value sent to the SimulationThread is overload with these meanings:
+          >0 distance in meters from the start on the track...
+          =0 singlestep, 
+          <0 whole track, 
+        """
+        if self.checkboxDistanceBreakpoint.isChecked() == True:
+            distance = self.spinboxDistanceBreakpoint.value()
+        else:
+            # No breakpoint indicated on GUI so run the whole track or 
+            # until user hits "pause" button
+            distance = -1
+
+        # signal the thread
+        self.simulationThread.thread_start_calculating(distance)
+        
     def createUserDisplayControls(self):
         self.labelDisplayControl = QLabel("Display Control")
 
+        #  Note - FYI - created in the order the controls appear on screen
         self.labelStatus = QLabel("Status")
         self.textboxStatus = QLineEdit("Initialized", self)
         self.textboxStatus.setReadOnly(True)
+        
         self.buttonRun = QPushButton('Run/Continue', self)
         self.buttonRun.setEnabled(True)
         self.buttonStop = QPushButton('Pause', self)
         self.buttonStop.setEnabled(True) 
+        
+        self.checkboxDistanceBreakpoint = QCheckBox('Distance Breakpoint (m)', self)
+        self.checkboxDistanceBreakpoint.setChecked(False) 
+        self.spinboxDistanceBreakpoint = QDoubleSpinBox()
+        self.spinboxDistanceBreakpoint.setReadOnly(True)
+        self.spinboxDistanceBreakpoint.setRange(0,999999)
 
-        self.labelSimulationIndex = QLabel("Sim. Index")
+        #outputs of simulation
+        self.labelSimulationIndex = QLabel("Current Sim. Index")
         self.textboxSimulationIndex = QLineEdit("0",self)
         self.textboxSimulationIndex.setReadOnly(False)
 
@@ -145,16 +187,19 @@ class MainWindow(QWidget):
         self.checkboxTime.setChecked(False)
         self.spinboxTime = QDoubleSpinBox()
         self.spinboxTime.setReadOnly(True)
+        self.spinboxTime.setRange(0, 999999)
 
         self.checkboxDistance = QCheckBox('Distance (m)', self)
         self.checkboxDistance.setChecked(False) 
         self.spinboxDistance = QDoubleSpinBox()
         self.spinboxDistance.setReadOnly(True)
+        self.spinboxDistance.setRange(0,999999)
 
         self.checkboxVelocity = QCheckBox('Velocity (m/s)', self)
         self.checkboxVelocity.setChecked(False) 
         self.spinboxVelocity = QDoubleSpinBox()
         self.spinboxVelocity.setReadOnly(True)
+        self.spinboxVelocity.setRange(0,999999)
 
         self.checkboxAcceleration = QCheckBox('Acceleration (m/s^2)', self)
         self.checkboxAcceleration.setChecked(False) 
@@ -165,41 +210,46 @@ class MainWindow(QWidget):
         self.checkboxMotorPower.setChecked(False) 
         self.spinboxMotorPower = QDoubleSpinBox()
         self.spinboxMotorPower.setReadOnly(True)
+        self.spinboxMotorPower.setRange(0,999999)
 
         self.checkboxBatteryPower = QCheckBox('Battery Power', self)
         self.checkboxBatteryPower.setChecked(False) 
         self.spinboxBatteryPower = QDoubleSpinBox()
         self.spinboxBatteryPower.setReadOnly(True)
-
+        self.spinboxBatteryPower.setRange(0,999999)
+        
         self.checkboxBatteryEnergy = QCheckBox('Battery Energy (j)', self)
         self.checkboxBatteryEnergy.setChecked(False) 
         self.spinboxBatteryEnergy = QDoubleSpinBox()
         self.spinboxBatteryEnergy.setReadOnly(True)
+        self.spinboxBatteryEnergy.setRange(0,999999)
 
         #self.userDisplayControlsGroup = QtGui.QGroupBox('User Display Controls')
         self.userDisplayControlsGroup = QGroupBox('User Display Controls')
         #self.userDisplayControlsLayout= QtGui.QGridLayout()
         self.userDisplayControlsLayout= QGridLayout()
-        self.userDisplayControlsLayout.addWidget(self.labelStatus,              0, 0)
-        self.userDisplayControlsLayout.addWidget(self.textboxStatus,            0, 1)
-        self.userDisplayControlsLayout.addWidget(self.buttonRun,                1, 0)
-        self.userDisplayControlsLayout.addWidget(self.buttonStop,               1, 1)
-        self.userDisplayControlsLayout.addWidget(self.labelSimulationIndex,     2, 0)
-        self.userDisplayControlsLayout.addWidget(self.textboxSimulationIndex,   2, 1)
-        self.userDisplayControlsLayout.addWidget(self.checkboxTime,             3, 0)
-        self.userDisplayControlsLayout.addWidget(self.spinboxTime,              3, 1)
-        self.userDisplayControlsLayout.addWidget(self.checkboxDistance,         4, 0)
-        self.userDisplayControlsLayout.addWidget(self.spinboxDistance,          4, 1)
-        self.userDisplayControlsLayout.addWidget(self.checkboxVelocity,         5, 0)
-        self.userDisplayControlsLayout.addWidget(self.spinboxVelocity,          5, 1)
-        self.userDisplayControlsLayout.addWidget(self.checkboxAcceleration,     6, 0)
-        self.userDisplayControlsLayout.addWidget(self.spinboxAcceleration,      6, 1)
-        self.userDisplayControlsLayout.addWidget(self.checkboxMotorPower,       7, 0)
-        self.userDisplayControlsLayout.addWidget(self.spinboxMotorPower,        7, 1)
-        self.userDisplayControlsLayout.addWidget(self.checkboxBatteryPower,     8, 0)
-        self.userDisplayControlsLayout.addWidget(self.spinboxBatteryPower,      8, 1)
-        self.userDisplayControlsLayout.addWidget(self.checkboxBatteryEnergy,    9, 0)
-        self.userDisplayControlsLayout.addWidget(self.spinboxBatteryEnergy,     9, 1)
+        self.userDisplayControlsLayout.addWidget(self.labelStatus,                  0, 0)
+        self.userDisplayControlsLayout.addWidget(self.textboxStatus,                0, 1)
+        self.userDisplayControlsLayout.addWidget(self.buttonRun,                    1, 0)
+        self.userDisplayControlsLayout.addWidget(self.buttonStop,                   1, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxDistanceBreakpoint,   2, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxDistanceBreakpoint,    2, 1)
+        self.userDisplayControlsLayout.addWidget(self.labelSimulationIndex,         3, 0)
+        self.userDisplayControlsLayout.addWidget(self.textboxSimulationIndex,       3, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxTime,                 4, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxTime,                  4, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxDistance,             5, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxDistance,              5, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxVelocity,             6, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxVelocity,              6, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxAcceleration,         7, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxAcceleration,          7, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxMotorPower,           8, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxMotorPower,            8, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxBatteryPower,         9, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxBatteryPower,          9, 1)
+        self.userDisplayControlsLayout.addWidget(self.checkboxBatteryEnergy,        10, 0)
+        self.userDisplayControlsLayout.addWidget(self.spinboxBatteryEnergy,         10, 1)
         self.userDisplayControlsGroup.setLayout(self.userDisplayControlsLayout)
 
     def simulationThreadResultsDataDisplay(self):
@@ -216,8 +266,9 @@ class MainWindow(QWidget):
         # TODO placeholder for SimulationThread SIGNALs terminated
         print('Window: SIGNAL From SimulationThread: Terminated')
 
-    ###################################
-    # TODO REMOVE/REPLACE FOR THE SIM APP
+    """
+    Slots routines to handle SIGNALs sent to MainWindow from other threads
+    """
     @pyqtSlot(str)
     def signalRcvFromSimulationThread(self, text):
         #self.buttonRun.setText(text)
@@ -330,12 +381,12 @@ class MainWindow(QWidget):
             else:
                 self.p7.hide()
             """
-        
 
 class SimulationThread(QThread):
     # Define the Signals we'll be emitting to the MainWindow
     simulationThreadSignal = pyqtSignal(str)
     simulationThreadPlotSignal = pyqtSignal(int)
+    breakpointDistance = 0
 
     def __init__(self, passed_data_store, parent=None):
         QThread.__init__(self, parent)
@@ -347,7 +398,7 @@ class SimulationThread(QThread):
         Start without compution in the simulationThread running
         """
         self.simulationComputing = False
-        self.iterations = 0
+        self.breakpointDistance = 0
 
         # Initialize the simulation universe
         self._data_store = passed_data_store
@@ -385,12 +436,15 @@ class SimulationThread(QThread):
         track = TrackProperties()
         track.set_air_density(air_density)
 
+        # format: distance (m), max velocity (m/s), constraint type
         track.add_critical_point(0.0, 10.0, track.FREE_ACCELERATION)
         track.add_critical_point(5.0, 5.0, track.FREE_ACCELERATION)
         track.add_critical_point(10.0, 10.0, track.FREE_ACCELERATION)
         track.add_critical_point(12.0, 12.0, track.FREE_ACCELERATION)
         track.add_critical_point(16.0, 15.0, track.FREE_ACCELERATION)
-        track.add_critical_point(50.0, 40.0, track.FREE_ACCELERATION)
+        track.add_critical_point(50.0, 30.0, track.FREE_ACCELERATION)
+        track.add_critical_point(100.0, 30.0, track.FREE_ACCELERATION)
+        #track.add_critical_point(1000.0, 40.0, track.FREE_ACCELERATION)
         track.generate_track_list(segment_distance)
 
         car = ElectricCarProperties()
@@ -405,17 +459,50 @@ class SimulationThread(QThread):
         self._data_store.set_track_properties(track)
 
     """ SimulationThread signal handling routines. This is the collection of SLOTS
-        that get signaled from the MainWindow tell the SimulationThread what to do,
-        like change states and start calculating, pause, etc.
+        that get signaled (emitted) from the MainWindow and tell the SimulationThread 
+        what to do, like change states and start calculating, pause, etc.
     """
     @pyqtSlot()
-    def thread_start_calculating(self):
+    def thread_start_calculating(self, distance_value):
+        """
+         This signal (slot) handler takes the distance value 
+         and updates SimulationThread computing state and interprets
+         the distance_value into appropriate values for "breakpoints" to, 
+         if necessary, to stop computing. 
+        """
+        print("Breakpoint Distance value:{}".format(distance_value))
         logger.info('Slot:thread_start_calculating :', 
                 extra={'sim_index': self._data_store.get_simulation_index()})
-        # Now send a signal back to the main window
-        self.simulationThreadSignal.emit("Calculating...")
-        # "state" variable indicating thread should be calculating
-        self.simulationComputing = True
+
+        if distance_value == 0:
+            logger.info('Slot:thread_start_calculating SINGLE STEP NOT IMPLEMENTED:', 
+                extra={'sim_index': self._data_store.get_simulation_index()})
+                #TODO - finish this breakpoint case
+            self.simulationComputing = False
+
+        elif distance_value == -1:
+            logger.info('Slot:thread_start_calculating RUN TO COMPLETION :', 
+                extra={'sim_index': self._data_store.get_simulation_index()})
+            # set the breakpoint to be a very large number to indicate run to completion
+            self.breakpointDistance = 9999999
+            self.simulationComputing = True
+        else:
+            # run to the distance value point in the track
+            sim_index = self._data_store.get_simulation_index()
+            if distance_value > self._data_store.get_distance_at_index(sim_index) :
+                logger.info('Slot:thread_start_calculating RUN TO DISTANCE :', 
+                    extra={'sim_index': sim_index})
+                # requested breakpoint is further down the track
+                self.breakpointDistance = distance_value
+                # Start computing and acknowledge to MainWindow by sending a signal back 
+                self.simulationThreadSignal.emit("Calculating...")
+                # "state" variable indicating thread should be calculating
+                self.simulationComputing = True
+            else:
+                logger.info('Slot:thread_start_calculating PAST REQUESTED DISTANCE :', 
+                    extra={'sim_index': sim_index})
+                # simulation has already past this point in the track, don't proceed
+                self.simulationComputing = False
 
     @pyqtSlot()
     def thread_stop_calculating(self):
@@ -480,15 +567,18 @@ class SimulationThread(QThread):
 
         # TODO - Add self.simulationComputing to loop control to while
         while self._data_store.get_simulation_index() < list_len:
+
+            # get the new index we are going to calculate
             sim_index = self._data_store.get_simulation_index()
 
-            # only continue simulation computing if the GUI says to do so.
-            if (self.simulationComputing == True):
-                if self._data_store.exit_event.is_set():
-                    break
-                distance_of_travel = (track.distance_list[sim_index] -
-                                      track.distance_list[sim_index - 1])
+            if self._data_store.exit_event.is_set():
+                break
+            distance_of_travel = (track.distance_list[sim_index] -
+                                  track.distance_list[sim_index - 1])
 
+            
+            # only continue simulation computing if the GUI says to do so.
+            if (self.simulationComputing == True and self.breakpointDistance > track.distance_list[sim_index]): 
                 velocity = get_velocity(sim_index - 1)
                 physics_results = max_positive_power_physics_simulation(velocity,
                                                                         distance_of_travel,
@@ -579,8 +669,23 @@ class SimulationThread(QThread):
                 # completed calculation for the latest simulation index,
                 self._data_store.increment_simulation_index()
             else:
-                # self.simulationComputing is False, so wait for GUI user to indicate proceed
-                time.sleep(0.1)
+                # self.simulationComputing is False or we've reached a breakpoint, 
+                # so wait for GUI user to indicate proceed
+                
+                if self.simulationComputing == True :
+                    # if we're computing and got here, we must have hit a breakpoint, therefore pause
+                    # Now send a signal back to the main window
+                    self.simulationThreadSignal.emit("Paused")
+                    
+                    # "state" variable indicating thread should stop calculating
+                    self.simulationComputing = False
+                    
+                #else: 
+                    # we've began not computing or a breakpoint already has sent us there
+                    # so do nothing more than waitk
+                
+                # in any case, wait until user gives us a new condition to continue computing
+                time.sleep(1.0)
                 logger.debug("waiting for simulationComputing==True",
                         extra={'sim_index': sim_index})
         # end of while data_store.get_simulation_index() < list_len:
@@ -640,14 +745,15 @@ class PlotRefreshTimingThread(QThread):
         logger.info("PlotRefreshTimingThread: entering while() ",
                 extra={'sim_index': 'N/A'})
         while True:
-            time.sleep(0.1)
+            time.sleep(5.0)
             self.plotRefreshTimingSignal.emit()
 
 
 if __name__ == "__main__":
     MainApp = QApplication(sys.argv)
-    #if __name__ == "__main__":
-    #    configure_logging()
+    if __name__ == "__main__":
+        configure_logging()
     window = MainWindow()
     window.show()
     sys.exit(cProfile.runctx("MainApp.exec_()", globals(), locals(), 'profile-display.out'))
+    
