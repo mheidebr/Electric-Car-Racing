@@ -742,12 +742,58 @@ class PlotRefreshTimingThread(QThread):
             time.sleep(5.0)
             self.plotRefreshTimingSignal.emit()
 
+class IndexPrintThread(QThread): 
+    # Thread responsible for a periodic print of the current index and information of the simulation
+
+    def __init__(self, passed_data_store, parent=None):
+        QThread.__init__(self, parent)
+        self.exiting = False
+
+        logger.info("IndexPrintThread: __init()__",
+                extra={'sim_index': 'N/A'})
+
+        self._data_store = passed_data_store
+
+
+    def __del__(self):    
+        # Before a PlotRefreshTimingThread object is destroyed, we need to ensure that it stops 
+        # processing.  For this reason, we implement the following method in a way that 
+        # indicates to  the part of the object that performs the processing that it must stop,
+        # and waits until it does so.
+        self.exiting = True
+        self.wait()
+
+    def run(self):
+        # Note: This is never called directly. It is called by Qt once the
+        # thread environment with the thread's start() method has been setup,
+        # and then runs "continuously" to do the work of the thread as it's main
+        # processing loop
+
+        logger.warning("PlotRefreshTimingThread: entering while() ",
+                extra={'sim_index': 'N/A'})
+        while True:
+            time.sleep(1.0)
+            simulation_index = self._data_store.get_simulation_index()
+            current_velocity = self._data_store.get_velocity()
+            logger.warning("IndexPrintThread: velocity: {}".format(current_velocity),
+                extra={'sim_index': simulation_index})
+
+
+SHOW_GUI = False
 
 if __name__ == "__main__":
     MainApp = QApplication(sys.argv)
-    if __name__ == "__main__":
-        configure_logging()
-    window = MainWindow()
-    window.show()
-    sys.exit(cProfile.runctx("MainApp.exec_()", globals(), locals(), 'profile-display.out'))
-    
+    # if __name__ == "__main__":
+    #     configure_logging()
+
+    if SHOW_GUI:
+        window = MainWindow()
+        window.show()
+        sys.exit(cProfile.runctx("MainApp.exec_()", globals(), locals(), 'profile-display.out'))
+    else:
+        data_store = DataStore()
+        printThread = IndexPrintThread(data_store)
+        simulationThread = SimulationThread(data_store)
+        simulationThread.thread_start_calculating(5000)
+        simulationThread.run()
+        printThread.run()
