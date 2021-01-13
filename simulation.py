@@ -1,4 +1,4 @@
-# The actual simulation goes here
+#The actual simulation goes here
 # This is the main application framework for the Race Simulation which contains the MainWindow,
 # based on PyQt, and spawns a Qthread SimulationThread thread.  Qt signals/slots are used to
 # communicate in both directions between them to control (start/pause/stop) and report results
@@ -54,6 +54,8 @@ from physics_equations import (max_negative_power_physics_simulation,
 from electric_car_properties import ElectricCarProperties
 from track_properties import (TrackProperties,
                               high_plains_raceway)
+from track_properties import (TrackProperties,
+                              simple_track)
 
 logger = logging.getLogger(__name__)
 
@@ -112,11 +114,16 @@ class MainWindow(QWidget):
 
         # Create the instances of our worker threads
         self.simulationThread = SimulationThread(self.data_store)
-        self.plotRefreshTimingThread = PlotRefreshTimingThread()
+        #self.plotRefreshTimingThread = PlotRefreshTimingThread()
 
         # Setup the SIGNALs to be received from the worker threads
         self.simulationThread.simulationThreadSignal.connect(self.signalRcvFromSimulationThread)
-        self.plotRefreshTimingThread.plotRefreshTimingSignal.connect(self.signalPlotRefresh)
+        # timer thread commented out and replaced with internal timer 
+        #self.plotRefreshTimingThread.plotRefreshTimingSignal.connect(self.signalPlotRefresh)
+        self.timer = QTimer()
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.signalPlotRefresh)
+        self.timer.start()
 
         # TODO - what mechanism and what to do when SimulationThread or dies like
         #       refresh GUI and save/close results file??
@@ -130,7 +137,7 @@ class MainWindow(QWidget):
         self.checkboxDistanceBreakpoint.clicked.connect(self.enableBreakpointSpinbox)
 
         self.simulationThread.start()
-        self.plotRefreshTimingThread.start()
+        #self.plotRefreshTimingThread.start()
 
     def enableBreakpointSpinbox(self):
         if self.checkboxDistanceBreakpoint.isChecked() == True:
@@ -257,19 +264,22 @@ class MainWindow(QWidget):
     def simulationThreadResultsDataDisplay(self):
         # TODO placeholder for real work to be done when the SimulationThread (a simulationThread thread)
         # SIGNALs MainWindow new data is available in shared memory
-        print('Window SIGNAL from SimulationThread: Results_data_ready')
+        #print('Window SIGNAL from SimulationThread: Results_data_ready')
+        time.sleep(0.1)
 
     def simulationThreadFinished(self):
         # TODO placeholder for SimulationThread SIGNALs ??exiting
         # data is available in shared memory
-        print('Window: SIGNAL From SimulationThread: Finished')
+        #print('Window: SIGNAL From SimulationThread: Finished')
+        time.sleep(0.1)
 
     def simulationThreadTerminated(self):
         # TODO placeholder for SimulationThread SIGNALs terminated
-        print('Window: SIGNAL From SimulationThread: Terminated')
+        #print('Window: SIGNAL From SimulationThread: Terminated')
+        time.sleep(0.1)
 
     """
-    Slots routines to handle SIGNALs sent to MainWindow from other threads
+    Slots routines to handle SIGNALs sent to MainWindow from other threads (or ourself - e.g. timer expiry)
     """
     @pyqtSlot(str)
     def signalRcvFromSimulationThread(self, text):
@@ -287,7 +297,7 @@ class MainWindow(QWidget):
         """
         Only refresh data if the simulations calculations have begun, indicated by 
         current_sim-index > 0
-        Note: current_sim_index is descremented "-1" for the following calls
+        Note: current_sim_index is decremented "-1" for the following calls
         because the lap_velocity_simulation calculations may be incomplete for the index
         when this "plot" signal was received and interrupted it. That is, the 
         SimulationThread is/could be still updating a DataStore data (lists) records  
@@ -332,27 +342,35 @@ class MainWindow(QWidget):
             _battery_energy = []
             
             _time = self.data_store.get_time_list(current_sim_index)
-            _distance = self.data_store.get_distance_list(current_sim_index)
-            _velocity = self.data_store.get_velocity_list(current_sim_index)
-            _max_velocity = self.data_store.get_track_max_velocity_list(current_sim_index)
-            _acceleration = self.data_store.get_acceleration_list(current_sim_index)
-            _motor_power = self.data_store.get_motor_power_list(current_sim_index)
-            _battery_power = self.data_store.get_battery_power_list(current_sim_index)
+            #_distance = self.data_store.get_distance_list(current_sim_index)
+            #_velocity = self.data_store.get_velocity_list(current_sim_index)
+            #_max_velocity = self.data_store.get_track_max_velocity_list(current_sim_index)
+            #_acceleration = self.data_store.get_acceleration_list(current_sim_index)
+            #_motor_power = self.data_store.get_motor_power_list(current_sim_index)
+            #_battery_power = self.data_store.get_battery_power_list(current_sim_index)
             #TODO not yet implemented
             #_battery_energy = self.data_store.get_battery_energy_list(current_sim_index)
             
+            #if self.checkboxTime.isChecked() == True :
+            #    self.p1.show()
+            #    self.p1.plot(x=x, y=_time, name="Plot1", title="Time")        
+            #else:
+            #    self.p1.hide()
             self.p1.plot(x=x, y=_time, name="Plot1", title="Time")        
             
             # selectively display the plots based on the checkboxes 
             if self.checkboxDistance.isChecked() == True :
                 self.p2.show()
+                _distance = self.data_store.get_distance_list(current_sim_index)
                 self.p2.plot(x=x, y=_distance, name="Plot2", title="Distance (m)")        
             else:
                 self.p2.hide()
                 
             if self.checkboxVelocity.isChecked() == True :
                 self.p3.show()
+                _max_velocity = self.data_store.get_track_max_velocity_list(current_sim_index)
                 self.p3.plot(x=x, y=_max_velocity, name="Plot3", title="Max Velocity (m/sec)", pen='r')
+                _velocity = self.data_store.get_velocity_list(current_sim_index)
                 self.p3.plot(x=x, y=_velocity, name="Plot3", title="Velocity (m/sec)")        
                 
             else:
@@ -360,18 +378,21 @@ class MainWindow(QWidget):
                 
             if self.checkboxAcceleration.isChecked() == True :
                 self.p4.show()
+                _acceleration = self.data_store.get_acceleration_list(current_sim_index)
                 self.p4.plot(x=x, y=_acceleration, name="Plot4", title="Acceleration (m/sec^2)")        
             else:
                 self.p4.hide()
                 
             if self.checkboxMotorPower.isChecked() == True :
                 self.p5.show()
+                _motor_power = self.data_store.get_motor_power_list(current_sim_index)
                 self.p5.plot(x=x, y=_motor_power, name="Plot5", title="Motor Power")        
             else:
                 self.p5.hide()
                 
             if self.checkboxBatteryPower.isChecked() == True :
                 self.p6.show()
+                _battery_power = self.data_store.get_battery_power_list(current_sim_index)
                 self.p6.plot(x=x, y=_battery_power, name="Plot6", title="Battery Power")        
             else:
                 self.p6.hide()
@@ -440,6 +461,8 @@ class SimulationThread(QThread):
 
         for distance in high_plains_raceway:
             track.add_critical_point(distance, high_plains_raceway[distance], track.FREE_ACCELERATION)
+        #for distance in simple_track:
+        #    track.add_critical_point(distance, simple_track[distance], track.FREE_ACCELERATION)
         track.generate_track_list(segment_distance)
 
         car = ElectricCarProperties()
@@ -465,7 +488,7 @@ class SimulationThread(QThread):
          the distance_value into appropriate values for "breakpoints" to, 
          if necessary, to stop computing. 
         """
-        print("Breakpoint Distance value:{}".format(distance_value))
+        #print("Breakpoint Distance value:{}".format(distance_value))
         logger.info('Slot:thread_start_calculating :', 
                 extra={'sim_index': self._data_store.get_simulation_index()})
 
@@ -703,6 +726,7 @@ class SimulationThread(QThread):
         # alternative profile results viewer for windows (untried): https://sourceforge.net/projects/qcachegrindwin/
         cProfile.runctx("self.racing_simulation()", globals(), locals(), 'profile-simulation.out')
         
+    """       
 class PlotRefreshTimingThread(QThread): 
     # Thread responsible for a periodic signal to the MainWindow which when received causes 
     # MainWindow to refresh it's plots.
@@ -742,7 +766,7 @@ class PlotRefreshTimingThread(QThread):
         while True:
             time.sleep(5.0)
             self.plotRefreshTimingSignal.emit()
-
+    """
 
 if __name__ == "__main__":
     args = call_args()
