@@ -39,6 +39,7 @@
 import sys
 import time
 import logging
+from project_argparser import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -744,9 +745,10 @@ class PlotRefreshTimingThread(QThread):
 
 
 if __name__ == "__main__":
-    MainApp = QApplication(sys.argv)
-    if __name__ == "__main__":
+    args = call_args()
+    if logging_arg.arg_check(args.logging):
         configure_logging()
+    MainApp = QApplication(sys.argv)
     window = MainWindow()
     window.show()
     sys.exit(cProfile.runctx("MainApp.exec_()", globals(), locals(), 'profile-display.out'))
