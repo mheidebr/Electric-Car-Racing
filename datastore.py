@@ -6,13 +6,18 @@ import electric_car_properties
 from copy import deepcopy
 from PyQt5.QtCore import *
 
+from physics_equations import PhysicsCalculationOutput
+
 logger = logging.getLogger(__name__)
 
 
 class DataStore:
     """Handles storage of data for the system, access is thread safe.
     Variables in the datastore should be treated as private and accessed/modified
-    with getters and setters
+    with getters and setters.
+
+    For the big data lists, the data at index i represents the data going between the distance
+    at index i and the distance at index (i + 1)
     """
 
     def __init__(self):
@@ -23,7 +28,7 @@ class DataStore:
         self._race_simulation_results = RacingSimulationResults()
 
         # simulation time variables
-        self._simulation_index = 1
+        self._simulation_index = 0
         self._walk_back_counter = 0
 
         self._lock = QReadWriteLock()
@@ -163,8 +168,9 @@ class DataStore:
         temp = deepcopy(_time)
         self._lock.unlock()
         return temp
-        
-    def get_velocity_at_index(self, index):
+
+    # Use this get for display purposes only
+    def get_velocity_at_index_for_display(self, index):
         self._lock.lockForRead()
         try:
             _velocity = self._lap_simulation_results.velocity_list[index]
@@ -172,6 +178,34 @@ class DataStore:
             logger.error("index out of range: {}, returning last velocity",
                     extra={'sim_index':index})
             _velocity = self._lap_simulation_results.velocity_list[-1]
+        temp = deepcopy(_velocity)
+        self._lock.unlock()
+        return temp
+
+    # The following 2 getters for velocity are to be used by the simulation
+    # and access the physics simulation results instead of the velocity
+    # list so thet there is less confusion when doing physics calculations
+    # back in time or forward in time
+    def get_final_velocity_at_index(self, index):
+        self._lock.lockForRead()
+        try:
+            _velocity = self._lap_simulation_results.physics_results_profile[index].final_velocity
+        except IndexError:
+            logger.error("index out of range: {}, returning last velocity",
+                    extra={'sim_index':index})
+            _velocity = self._lap_simulation_results.physics_results_profile[-1].final_velocity
+        temp = deepcopy(_velocity)
+        self._lock.unlock()
+        return temp
+    
+    def get_initial_velocity_at_index(self, index):
+        self._lock.lockForRead()
+        try:
+            _velocity = self._lap_simulation_results.physics_results_profile[index].initial_velocity
+        except IndexError:
+            logger.error("index out of range: {}, returning first velocity",
+                    extra={'sim_index':index})
+            _velocity = self._lap_simulation_results.physics_results_profile[0].initial_velocity
         temp = deepcopy(_velocity)
         self._lock.unlock()
         return temp
@@ -476,6 +510,8 @@ class LapVelocitySimulationResults():
         self.velocity_list = []
         self.physics_results_profile = []
 
+        physics_result_filler = PhysicsCalculationOutput(1,1,1,1,1,1)
+
         # length - 1 is for the because the first element is added above
         for i in range(length):
             self.time_list.append(0)
@@ -484,8 +520,8 @@ class LapVelocitySimulationResults():
             self.battery_power_list.append(0)
             self.motor_energy_list.append(0)
             self.acceleration_list.append(0)
-            self.velocity_list.append(1)
-            self.physics_results_profile.append(0)
+            self.velocity_list.append(0)
+            self.physics_results_profile.append(physics_result_filler)
 
     def add_physics_results(self, physics_results, index):
         """Function that inserts physics results at index: index
