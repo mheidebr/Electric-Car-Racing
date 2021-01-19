@@ -7,12 +7,14 @@ logger = logging.getLogger(__name__)
 
 GRAVITY = 9.81  # m/s^2
 
+
 class PhysicsCalculationOutput():
     """Class that contains the data
     that every physics based function must return
     when doing a calculation over one segment of the track.
 
     This includes:
+      - Initial velocity (meters/second)
       - Final velocity (meters/second)
       - distance traveled (meters)
       - time of segment (seconds)
@@ -20,8 +22,9 @@ class PhysicsCalculationOutput():
       - maybe other things later
     TODO: add checks on output data
     """
-    def __init__(self, final_velocity, distance_traveled, time_of_segment,
-                 energy_differential_of_motor, acceleration):
+    def __init__(self, initial_velocity, final_velocity, distance_traveled,
+                 time_of_segment, energy_differential_of_motor, acceleration):
+        self.initial_velocity = initial_velocity
         self.final_velocity = final_velocity
         self.distance_traveled = distance_traveled
         self.time_of_segment = time_of_segment
@@ -179,7 +182,7 @@ def free_acceleration_calculation(initial_velocity,
 
     final_kinetic_energy_term = 0.5 * (rotational_inertia * ((1/wheel_radius) ** 2) +
                                        mass)
-
+    # TODO: change signs to be correct in each individual term (drag forces are negative) and update signs here
     energy_sum = (initial_linear_kinetic_energy +
                   initial_rotational_kinetic_energy -
                   drag_energy -
@@ -210,8 +213,116 @@ def free_acceleration_calculation(initial_velocity,
                          final_rotational_kinetic_energy, initial_rotational_kinetic_energy),
                  extra={'sim_index': 'N/A'})
 
-    physics_results = PhysicsCalculationOutput(final_velocity, distance_of_travel,
+    physics_results = PhysicsCalculationOutput(initial_velocity, final_velocity, distance_of_travel,
                                                time_of_segment, energy_motor, acceleration)
+
+    return physics_results
+
+
+def reverse_dececceleration_calculation(final_velocity,
+                                        distance_of_travel,
+                                        motor_power,
+                                        motor_efficiency,
+                                        wheel_radius,
+                                        rotational_inertia,
+                                        mass,
+                                        drag_coefficient,
+                                        frontal_area,
+                                        wheel_pressure_bar,
+                                        air_density):
+    """Solve for initial velocity using an energy balance.
+    THIS MUST BE DONE OVER A SMALL distance_of_travel TO
+    MAKE THE ASSUMPTIONS TRUE:
+    Assumptions:
+        - Drag force calculated using final velocity
+          because change in velocity is assumed to be small
+        - No elevation change
+
+    TODO: add in elevation change to equations
+    TODO: add in other drag losses to equations
+
+    Elements included:
+        - Initial and final kinetic energy
+        - Initial and final rotational kinetic energy
+        - Drag energy
+        - Motor efficiency
+
+    See the e lemons google drive for proof of physics equations
+
+    Args:
+        final_velocity (float): final velocity of car (meters/second)
+        distance_of_travel (float): distance overwhich the car travels (meters)
+        motor_power (float): power output (or input) by motor (Watts)
+        motor_efficiency (float): efficiency of motor (unitless)
+        wheel_radius (float): radius of wheels on car (meters)
+        rotational_inertia (float): car's rotational_inertia (kg*m^2)
+        mass (float): mass of car (kg)
+        drag_coefficient (float): coefficient of drag of car (unitless)
+        frontal_area (float): frontal area of car (meters^2)
+        wheel_pressure_bar (float): wheel pressure (bar)
+        air_density (float): density of air car is travling through (kg/meters^3)
+
+    Returns:
+        output (PhysicsCalculationOutput): output data of the segment
+    """
+
+    time_of_segment = time_of_travel_calculation(final_velocity, distance_of_travel)
+
+    energy_motor = motor_power * time_of_segment
+
+    final_linear_kinetic_energy = kinetic_energy_calculation(mass, final_velocity)
+    final_rotational_kinetic_energy \
+        = rotational_kinetic_energy_calculation(rotational_inertia,
+                                                wheel_radius,
+                                                final_velocity)
+    # -1 to reverse sign of this force because the simulation is running backwards in time
+    drag_energy = -1 * distance_of_travel * drag_force_calculation(drag_coefficient,
+                                                                   final_velocity,
+                                                                   air_density,
+                                                                   frontal_area)
+    # -1 to reverse sign of this force because the simulation is running backwards in time
+    rolling_resistance_force = \
+        -1 * rolling_resistance_force_calculation(mass, final_velocity, wheel_pressure_bar)
+    rolling_resistance_energy = rolling_resistance_force * time_of_segment
+
+    initial_kinetic_energy_term = 0.5 * (rotational_inertia * ((1/wheel_radius) ** 2) +
+                                         mass)
+
+    energy_sum = (final_linear_kinetic_energy
+                  + final_rotational_kinetic_energy
+                  - drag_energy
+                  - rolling_resistance_energy
+                  - energy_motor)
+    initial_velocity = sqrt(energy_sum /
+                            initial_kinetic_energy_term)
+
+    initial_linear_kinetic_energy = kinetic_energy_calculation(mass, final_velocity)
+    initial_rotational_kinetic_energy = \
+        rotational_kinetic_energy_calculation(rotational_inertia, wheel_radius, final_velocity)
+
+    # TODO MH Add in a check that the actual drag losses
+    # using the final velocity wouldn't be XX percent
+    # different than the calculated one, if it would be
+    # then redo calc with smaller distance traveled
+    # or solve with a system of equations
+
+    # time_of_segment = distance_of_travel / ((final_velocity + initial_velocity) / 2)
+    acceleration = (final_velocity - initial_velocity) / time_of_segment
+
+    logger.debug("acc, {}, final_v, {}, initial_v, {}, time, {}, distance, {}"
+                 .format(acceleration, final_velocity, initial_velocity,
+                         time_of_segment, distance_of_travel),
+                 extra={'sim_index': 'N/A'})
+    logger.debug("final linear e, {}, init linear e, {}, final rot e, {}, init rot e, {}"
+                 .format(final_linear_kinetic_energy, initial_linear_kinetic_energy,
+                         final_rotational_kinetic_energy, initial_rotational_kinetic_energy),
+                 extra={'sim_index': 'N/A'})
+
+    physics_results = PhysicsCalculationOutput(initial_velocity, final_velocity, distance_of_travel,
+                                               time_of_segment, energy_motor, acceleration)
+    # developer check
+    if final_velocity > initial_velocity:
+        raise("reverse physics calculation wrong! initial velocity lower than final velocity")
 
     return physics_results
 
@@ -259,7 +370,7 @@ def constrained_velocity_calculation(initial_velocity,
     time_of_segment = distance_of_travel / ((final_velocity + initial_velocity) / 2)
 
     acceleration = (final_velocity - initial_velocity) / time_of_segment
-
+    # TODO: change signs to be correct in each individual term (drag forces are negative)
     drag_force = drag_force_calculation(drag_coefficient,
                                         initial_velocity,
                                         air_density,
@@ -291,10 +402,43 @@ def constrained_velocity_calculation(initial_velocity,
                          final_rotational_kinetic_energy, initial_rotational_kinetic_energy),
                  extra={'sim_index': 'N/A'})
 
-    physics_results = PhysicsCalculationOutput(final_velocity, distance_of_travel,
+    physics_results = PhysicsCalculationOutput(initial_velocity, final_velocity, distance_of_travel,
                                                time_of_segment, energy_motor, acceleration)
 
     return physics_results
+
+
+def reverse_max_negative_power_physics_simulation(final_velocity,
+                                                  distance_of_travel,
+                                                  car,
+                                                  air_density):
+    """Function that calculats a small portion of a lap of a car with
+    car_characteristics on a track with track_characteristics. The
+    calculation is done knowing the final velocity and the initial
+    velocity is calculated.
+
+    Args:
+        final_velocity (float): final velocity (m/s)
+        distance_of_travel (float): distance traveled for the calculation
+        car (dict): Characteristics of car being simulated
+        air_density: density of air that the car is traveling through
+
+    Returns:
+        results (ReverseSimulationResults): results of the simulation increment
+
+    """
+    results = reverse_dececceleration_calculation(final_velocity,
+                                                  distance_of_travel,
+                                                  -car["motor_power"],
+                                                  car["motor_efficiency"],
+                                                  car["wheel_radius"],
+                                                  car["rotational_inertia"],
+                                                  car["mass"],
+                                                  car["drag_coefficient"],
+                                                  car["frontal_area"],
+                                                  car["wheel_pressure_bar"],
+                                                  air_density)
+    return results
 
 
 def max_positive_power_physics_simulation(initial_velocity,

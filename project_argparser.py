@@ -21,7 +21,8 @@ class SingleArg:
         elif (input == self.off_msg):
             return False
         else:
-            raise argparse.ArgumentTypeError('Invalid input — use -h for more information on arguments.') 
+            return False
+            #raise argparse.ArgumentTypeError('Invalid input — use -h for more information on arguments.') 
 
     #My thought is — in the future more methods like arg_check() can be implemented to allow for checking on non-binary arguments such as file names, etc.
 
