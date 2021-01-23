@@ -54,6 +54,7 @@ from physics_equations import (max_negative_power_physics_simulation,
 from electric_car_properties import ElectricCarProperties
 from track_properties import (TrackProperties,
                               high_plains_raceway)
+import csv
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,26 @@ class MainWindow(QWidget):
         QWidget.__init__(self, parent=None)
 
         self.data_store = DataStore()
+
+        #turning logging on/off -- args are initialized and parsed when data_store is instantiated
+        if (self.data_store.get_logging_arg()):
+            configure_logging()
+
+        #TODO -- incorporate these csv files into the application
+        self.car_file = self.data_store.get_car_file()
+        self.track_file = self.data_store.get_track_file()
+
+        #CSVTEST-------------
+
+        read_car = csv.reader(self.car_file, delimiter=",")
+        read_track = csv.reader(self.track_file, delimiter=",")
+        for row in read_car:
+            print(row)
+        for row in read_track:
+            print(row)
+
+        #ENDCSVTEST-----------
+
         logger.info("MainWindow: DataStore initialized",
                 extra={'sim_index': self.data_store.get_simulation_index()})
 
@@ -745,9 +766,6 @@ class PlotRefreshTimingThread(QThread):
 
 
 if __name__ == "__main__":
-    args = call_args()
-    if logging_arg.arg_check(args.logging):
-        configure_logging()
     MainApp = QApplication(sys.argv)
     window = MainWindow()
     window.show()

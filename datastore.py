@@ -5,6 +5,7 @@ import track_properties
 import electric_car_properties
 from copy import deepcopy
 from PyQt5.QtCore import *
+from project_argparser import *
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,15 @@ class DataStore:
 
         # for interrupting and stopping the simulation
         self.exit_event = threading.Event()
+
+        #initializing the argparser
+        self.parser = argparse.ArgumentParser(description='Electric car racing simulation')
+
+        #initializing single arguments
+        self.logging_arg = SingleArg(self.parser, '-l', '--logging', 'Turn logging on or off — enter either "on" or "off". This defaults to off with no argument.', 'on', 'off')
+        self.car_arg = SingleArg(self.parser, '-c', '--car', 'Load a custom car configuration — defaults to included file car.csv.', 'void', 'car.csv')
+        self.track_arg = SingleArg(self.parser, '-t', '--track', 'Load a custom track configuration — defaults to included file track.csv.', 'void', 'track.csv')
+        self.output_arg = SingleArg(self.parser, '-o', '--output', 'Specify a name for an output file — defaults to "output.csv" by default.', 'void', 'output.csv')
 
     # Getters and setters for simulation time variables
     def get_simulation_index(self):
@@ -337,6 +347,20 @@ class DataStore:
         self._lock.lockForWrite()
         self._lap_simulation_results.add_physics_results(physics_results, index)
         self._lock.unlock()
+
+    def get_args(self):
+        return self.parser.parse_args()
+    
+    #returns either a boolean value or raises an error
+    def get_logging_arg(self):
+        return self.logging_arg.arg_check(self.parser.parse_args().logging)
+    
+    #car_file and track_file returns a file object
+    def get_car_file(self):
+        return self.car_arg.open_file(self.parser.parse_args().car )
+    
+    def get_track_file(self):
+        return self.track_arg.open_file(self.parser.parse_args().track)
 
 
 class RacingSimulationResults():
