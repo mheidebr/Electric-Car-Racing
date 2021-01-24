@@ -39,7 +39,6 @@
 import sys
 import time
 import logging
-from project_argparser import *
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -54,7 +53,7 @@ from physics_equations import (max_negative_power_physics_simulation,
 from electric_car_properties import ElectricCarProperties
 from track_properties import (TrackProperties,
                               high_plains_raceway)
-import csv
+
 
 logger = logging.getLogger(__name__)
 
@@ -74,17 +73,11 @@ class MainWindow(QWidget):
             configure_logging()
 
         #TODO -- incorporate these csv files into the application
-        self.car_file = self.data_store.get_car_file()
-        self.track_file = self.data_store.get_track_file()
+        
 
         #CSVTEST-------------
 
-        read_car = csv.reader(self.car_file, delimiter=",")
-        read_track = csv.reader(self.track_file, delimiter=",")
-        for row in read_car:
-            print(row)
-        for row in read_track:
-            print(row)
+        
 
         #ENDCSVTEST-----------
 
@@ -446,29 +439,29 @@ class SimulationThread(QThread):
     def initialize_race(self):
 
         segment_distance = 0.005  # meters, this must be very very small
-        battery_power = 40000  # 40kW
-        motor_efficiency = 0.8
-        wheel_radius = 0.25  # m, ~20 in OD on tires
-        rotational_inertia = 10  # kg*m^2
-        mass = 1000  # kg
-        drag_coefficient = 0.4
-        frontal_area = 7  # m^2
-        air_density = 1  # kg/m^3
-        wheel_pressure_bar = 3 # bar
+        #battery_power = 40000  # 40kW
+        #motor_efficiency = 0.8
+        #wheel_radius = 0.25  # m, ~20 in OD on tires
+        #rotational_inertia = 10  # kg*m^2
+        #mass = 1000  # kg
+        #drag_coefficient = 0.4
+        #frontal_area = 7  # m^2
+        #air_density = 1  # kg/m^3
+        #wheel_pressure_bar = 3 # bar
 
         track = TrackProperties()
-        track.set_air_density(air_density)
+        track.set_air_density(self._data_store.get_air_density())
 
-        for distance in high_plains_raceway:
-            track.add_critical_point(distance, high_plains_raceway[distance], track.FREE_ACCELERATION)
+        for distance in self._data_store.get_breakpoint_dict():
+            track.add_critical_point(distance, self._data_store.get_breakpoint_dict()[distance], track.FREE_ACCELERATION)
         track.generate_track_list(segment_distance)
 
         car = ElectricCarProperties()
-        car.set_car_parameters(mass=mass, rotational_inertia=rotational_inertia,
-                               motor_power=battery_power, motor_efficiency=motor_efficiency,
-                               battery_capacity=10, drag_coefficient=drag_coefficient,
-                               frontal_area=frontal_area, wheel_radius=wheel_radius,
-                               wheel_pressure_bar=wheel_pressure_bar)
+        car.set_car_parameters(mass=self._data_store.get_car_attributes()[0], rotational_inertia=self._data_store.get_car_attributes()[1],
+                               motor_power=self._data_store.get_car_attributes()[2], motor_efficiency=self._data_store.get_car_attributes()[3],
+                               battery_capacity=self._data_store.get_car_attributes()[4], drag_coefficient=self._data_store.get_car_attributes()[5],
+                               frontal_area=self._data_store.get_car_attributes()[6], wheel_radius=self._data_store.get_car_attributes()[7],
+                               wheel_pressure_bar=self._data_store.get_car_attributes()[8])
 
         self._data_store.initialize_lap_lists(len(track.distance_list))
         self._data_store.set_car_properties(car)

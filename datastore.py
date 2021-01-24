@@ -7,6 +7,7 @@ from copy import deepcopy
 from PyQt5.QtCore import *
 from project_argparser import *
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,12 +35,31 @@ class DataStore:
 
         #initializing the argparser
         self.parser = argparse.ArgumentParser(description='Electric car racing simulation')
+        self.args = self.parser.parse_args()
 
         #initializing single arguments
         self.logging_arg = SingleArg(self.parser, '-l', '--logging', 'Turn logging on or off — enter either "on" or "off". This defaults to off with no argument.', 'on', 'off')
-        self.car_arg = SingleArg(self.parser, '-c', '--car', 'Load a custom car configuration — defaults to included file car.csv.', 'void', 'car.csv')
-        self.track_arg = SingleArg(self.parser, '-t', '--track', 'Load a custom track configuration — defaults to included file track.csv.', 'void', 'track.csv')
+        self.car_arg = SingleArg(self.parser, '-c', '--car', 'Load a custom car configuration — defaults to included file car.csv.', 'void', 'default_car.csv')
+        self.track_arg = SingleArg(self.parser, '-t', '--track', 'Load a custom track configuration — defaults to included file track.csv.', 'void', 'high_plains_track.csv')
         self.output_arg = SingleArg(self.parser, '-o', '--output', 'Specify a name for an output file — defaults to "output.csv" by default.', 'void', 'output.csv')
+
+        #reading in csv files as lists
+        self.car_attributes_list = self.car_arg.open_csv_data(self.parser.parse_args().car)
+        self.track_attributes_list = self.track_arg.open_csv_data(self.parser.parse_args().track)
+
+        for i in range(len(self.car_attributes_list)):
+            if '.' in self.car_attributes_list[i]:
+                self.car_attributes_list[i] = float(self.car_attributes_list[i])
+            else:
+                self.car_attributes_list[i] = int(self.car_attributes_list[i])
+
+        #the way I have it organized right now, the air density value is the first in the track csv file,
+        #which is then popped and the rest of the breakpoints are converted and fed into a dictionary
+        self.air_density = int(self.track_attributes_list[0])
+        self.track_attributes_list.pop(0)
+        self.breakpoint_dict = dict()
+        for i in range(int(len(self.track_attributes_list) / 2)):
+            self.breakpoint_dict[float(self.track_attributes_list[2*i])] = float(self.track_attributes_list[(2*i)+1])
 
     # Getters and setters for simulation time variables
     def get_simulation_index(self):
@@ -355,13 +375,14 @@ class DataStore:
     def get_logging_arg(self):
         return self.logging_arg.arg_check(self.parser.parse_args().logging)
     
-    #car_file and track_file returns a file object
-    def get_car_file(self):
-        return self.car_arg.open_file(self.parser.parse_args().car )
+    def get_air_density(self):
+        return self.air_density
     
-    def get_track_file(self):
-        return self.track_arg.open_file(self.parser.parse_args().track)
-
+    def get_breakpoint_dict(self):
+        return self.breakpoint_dict
+    
+    def get_car_attributes(self):
+        return self.car_attributes_list
 
 class RacingSimulationResults():
     def __init__(self):
@@ -435,3 +456,7 @@ class LapVelocitySimulationResults():
                                          physics_results.energy_differential_of_motor)
         self.acceleration_list[index] = physics_results.acceleration
         self.velocity_list[index] = physics_results.final_velocity
+
+if __name__ == "__main__":
+    test = DataStore()
+    print(test.breakpoint_dict)
