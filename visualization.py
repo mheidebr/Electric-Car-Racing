@@ -29,7 +29,6 @@
 import sys
 import time
 import logging
-#from project_argparser import SingleArg
 from project_argparser import *
 from PyQt5.QtCore import (QTimer, pyqtSignal, pyqtSlot)
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QLabel, QLineEdit, QCheckBox, QPushButton)
@@ -415,9 +414,6 @@ class MainWindow(QWidget):
 
 
 if __name__ == "__main__":
-    #argChecker = SingleArg()
-    #args = argChecker.call_args()
-    #if argChecker.logging_arg.arg_check(args.logging):
     args= call_args()
     if logging_arg.arg_check(args.logging):
         configure_logging()
