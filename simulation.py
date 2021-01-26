@@ -155,8 +155,6 @@ class SimulationThread(QThread):
 
         # "state" variable indicating thread should stop calculating
         self.simulationComputing = False
-    
-    def get_walk
 
     def racing_simulation(self):
         """Function accepts a car and a track and executes
@@ -210,7 +208,7 @@ class SimulationThread(QThread):
                      extra={'sim_index': self._data_store.get_simulation_index()})
 
         # TODO - Add self.simulationComputing to loop control to while
-        while self._data_store.get_simulation_index() < list_len:
+        while self._data_store.get_simulation_index() < (list_len - 1):
 
             # get the new index we are going to calculate
             sim_index = self._data_store.get_simulation_index()
@@ -232,7 +230,7 @@ class SimulationThread(QThread):
                 if get_final_velocity(sim_index) > track.max_velocity_list[sim_index]:
                     # velocity constraint violated!!
                     # start walking back until velocity constraint at sim_index is met
-                    logger.info("velocity constraint violated starting walk back, current v: {}, max: {}"
+                    logger.debug("velocity constraint violated starting walk back, current v: {}, max: {}"
                         .format(physics_results.final_velocity, track.max_velocity_list[sim_index]),
                         extra={'sim_index': self._data_store.get_simulation_index()})
                     self.walk_back(track.max_velocity_list[sim_index], track, car)
@@ -347,7 +345,7 @@ class SimulationThread(QThread):
                                                                             distance_of_travel,
                                                                             car,
                                                                             air_density)
-            logger.info("physics.initial_v: {}, current_v: {}, comparison_v: {}, walk_indx: {}, walk_cnt: {}"
+            logger.debug("physics.initial_v: {}, current_v: {}, comparison_v: {}, walk_indx: {}, walk_cnt: {}"
                         .format(physics_results.initial_velocity, current_velocity, comparison_velocity, walk_back_index, self._data_store.get_walk_back_counter()),
                         extra={'sim_index': self._data_store.get_simulation_index()})                                                            
             # compare resulting velocity against datastore velocity
@@ -367,7 +365,7 @@ class SimulationThread(QThread):
                                                             air_density)
                 add_physics_result_to_datastore(physics_results, walk_back_index)
                 walk_back_status = "walk back complete"
-                logger.info("walkback complete, constrained physics",
+                logger.debug("walkback complete, constrained physics",
                         extra={'sim_index': self._data_store.get_simulation_index()})
             else:
                 raise("Something wrong in walk back! Please contact you local dev for more information")

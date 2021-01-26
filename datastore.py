@@ -85,7 +85,7 @@ class DataStore:
         self._lock.lockForWrite()
         temp = self._walk_back_counter
         self._walk_back_counter = 0
-        logger.info("walk_back_counter updated to {} from {}"
+        logger.debug("walk_back_counter updated to {} from {}"
                     .format(self._walk_back_counter, temp),
                     extra={'sim_index': "N/A"})
         self._lock.unlock()
