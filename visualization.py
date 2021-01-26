@@ -323,7 +323,7 @@ class MainWindow(QWidget):
             distance = self.data_store.get_distance_at_index(refresh_index)
             self.spinboxDistance.setValue(distance)
 
-            velocity = self.data_store.get_velocity_at_index(refresh_index)
+            velocity = self.data_store.get_velocity_at_index_for_display(refresh_index)
             self.spinboxVelocity.setValue(velocity)
 
             acceleration = self.data_store.get_acceleration_at_index(refresh_index)
