@@ -12,6 +12,7 @@ class SingleArg:
         self.on_msg = on_msg
         self.off_msg = off_msg
     
+    #argument checking for on/off or other binary arguments
     def arg_check(self, input):
         if (input == self.on_msg):
             return True
@@ -20,6 +21,7 @@ class SingleArg:
         else:
             raise argparse.ArgumentTypeError('Invalid input — use -h for more information on arguments.') 
     
+    #opens csv and creates dict with keys corresponding to the headers of the fastsim car csv file format
     def open_car_dict(self, input):
         if not os.path.exists(input):
             raise argparse.ArgumentTypeError('The file %s is not in the working directory' % input)
@@ -31,6 +33,7 @@ class SingleArg:
             car_dict[csv_data[0][i]] = eval_type(csv_data[1][i]) 
         return car_dict
     
+    #opens csv file and returns a dict with keys "air_density" and integers representing breakpoints
     def open_track_dict(self, input):
         if not os.path.exists(input):
             raise argparse.ArgumentTypeError('The file %s is not in the working directory' % input)
@@ -45,6 +48,7 @@ class SingleArg:
         return track_dict
 
 
+#call_args() now instantiates each SingleArg object and adds them to a dictionary, as well as the data structure filled with parsed args
 def call_args():
     parser = argparse.ArgumentParser(description="Electric car racing simulation")
 
@@ -57,6 +61,7 @@ def call_args():
 
     return arg_dict
 
+#for flexible type conversion -- may not be a permanent solution
 def eval_type(input):
     try:
         input = ast.literal_eval(input)
