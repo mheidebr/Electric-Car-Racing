@@ -49,10 +49,10 @@ def call_args():
     parser = argparse.ArgumentParser(description="Electric car racing simulation")
 
     arg_dict = dict()
-    arg_dict["logging_arg"] = SingleArg(self.parser, '-l', '--logging', 'Turn logging on or off — enter either "on" or "off". This defaults to off with no argument.', 'on', 'off')
-    arg_dict["car_arg"] = SingleArg(self.parser, '-c', '--car', 'Load a custom car configuration — defaults to included file default_car.csv.', 'void', 'default_car.csv')
-    arg_dict["track_arg"] = SingleArg(self.parser, '-t', '--track', 'Load a custom track configuration — defaults to included file track.csv.', 'void', 'high_plains_track.csv')
-    arg_dict["output_arg"] = SingleArg(self.parser, '-o', '--output', 'Specify a name for an output file — defaults to "output.csv" by default.', 'void', 'output.csv')
+    arg_dict["logging_arg"] = SingleArg(parser, '-l', '--logging', 'Turn logging on or off — enter either "on" or "off". This defaults to off with no argument.', 'on', 'off')
+    arg_dict["car_arg"] = SingleArg(parser, '-c', '--car', 'Load a custom car configuration — defaults to included file default_car.csv.', 'void', 'default_car.csv')
+    arg_dict["track_arg"] = SingleArg(parser, '-t', '--track', 'Load a custom track configuration — defaults to included file track.csv.', 'void', 'high_plains_track.csv')
+    arg_dict["output_arg"] = SingleArg(parser, '-o', '--output', 'Specify a name for an output file — defaults to "output.csv" by default.', 'void', 'output.csv')
     arg_dict["parsed_args"] = parser.parse_args()
 
     return arg_dict
