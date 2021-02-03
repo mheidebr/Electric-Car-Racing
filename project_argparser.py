@@ -1,11 +1,8 @@
 import argparse
+import os.path
+import csv
+import ast
 
-#Creating the parser
-parser = argparse.ArgumentParser(description="Electric car racing simulation")
-
-#This class is meant to make it easier to enter two correct inputs and check against them
-#Preferably the name you give to an object of this class would be the same (or as close to the same without conflict) as the name of the argument created within it
-#...to allow for easily calling arg_check() (ex:logging_arg.arg_check(args.logging))
 class SingleArg:
 
     def __init__(self, parser, key, lng_key, help_msg, on_msg, off_msg):
@@ -21,18 +18,49 @@ class SingleArg:
         elif (input == self.off_msg):
             return False
         else:
-            return False
-            #raise argparse.ArgumentTypeError('Invalid input — use -h for more information on arguments.') 
+            raise argparse.ArgumentTypeError('Invalid input — use -h for more information on arguments.') 
+    
+    def open_car_dict(self, input):
+        if not os.path.exists(input):
+            raise argparse.ArgumentTypeError('The file %s is not in the working directory' % input)
+        else:
+            with open(input, newline='') as csv_file:
+                csv_data = list(csv.reader(csv_file))
+        car_dict = dict()
+        for i in range(len(csv_data[0])):
+            car_dict[csv_data[0][i]] = eval_type(csv_data[1][i]) 
+        return car_dict
+    
+    def open_track_dict(self, input):
+        if not os.path.exists(input):
+            raise argparse.ArgumentTypeError('The file %s is not in the working directory' % input)
+        else:
+            with open(input, newline='') as csv_file:
+                csv_data = list(csv.reader(csv_file))[0]
+        track_dict = dict()
+        track_dict["air_density"] = csv_data[0]
+        csv_data.pop(0)
+        for i in range(int(len(csv_data)/2)):
+            track_dict[float(csv_data[2*i])] = eval_type(csv_data[(2*i)+1])
+        return track_dict
 
-    #My thought is — in the future more methods like arg_check() can be implemented to allow for checking on non-binary arguments such as file names, etc.
 
 def call_args():
-    #My thought is that when new arguments are needed, they can be instantiated here and each object's arg_check() method can help with correcting input   
-    return parser.parse_args()
+    parser = argparse.ArgumentParser(description="Electric car racing simulation")
 
-logging_arg = SingleArg(parser, '-l', '--logging', 'Turn logging on or off — enter either "on" or "off". This defaults to on with no argument.', 'on', 'off')
+    arg_dict = dict()
+    arg_dict["logging_arg"] = SingleArg(self.parser, '-l', '--logging', 'Turn logging on or off — enter either "on" or "off". This defaults to off with no argument.', 'on', 'off')
+    arg_dict["car_arg"] = SingleArg(self.parser, '-c', '--car', 'Load a custom car configuration — defaults to included file default_car.csv.', 'void', 'default_car.csv')
+    arg_dict["track_arg"] = SingleArg(self.parser, '-t', '--track', 'Load a custom track configuration — defaults to included file track.csv.', 'void', 'high_plains_track.csv')
+    arg_dict["output_arg"] = SingleArg(self.parser, '-o', '--output', 'Specify a name for an output file — defaults to "output.csv" by default.', 'void', 'output.csv')
+    arg_dict["parsed_args"] = parser.parse_args()
 
-#Test area for args
-if __name__ == "__main__":
-    pass
+    return arg_dict
+
+def eval_type(input):
+    try:
+        input = ast.literal_eval(input)
+    except ValueError:
+        pass
+    return input
     
