@@ -10,6 +10,21 @@ from physics_equations import PhysicsCalculationOutput
 
 logger = logging.getLogger(__name__)
 
+class DataResultsUpdate:
+    """ convenience class used to pass (retrieve) calculated sim data from DataStore to consumers
+    """
+    def __init__(self):
+        self.refresh_index  # the starting index where the following data was retrieved from respective data lists
+        self.time_list_update = []
+        self.distance_list_update = []
+        self.velocity_list_update = []
+        self.acceleration_list_update = []
+        self.motor_power_list_update = []
+        self.battery_power_list_update = []
+        self.motor_energy_list_update = []
+
+
+
 
 class DataStore:
     """Handles storage of data for the system, access is thread safe.
@@ -19,7 +34,7 @@ class DataStore:
     For the big data lists, the data at index i represents the data going between the distance
     at index i and the distance at index (i + 1)
     """
-
+    
     def __init__(self):
 
         self._car = electric_car_properties.ElectricCarProperties()
@@ -27,9 +42,11 @@ class DataStore:
         self._lap_simulation_results = LapVelocitySimulationResults()
         self._race_simulation_results = RacingSimulationResults()
 
-        # simulation time variables
+        # simulation time variables for managing the simulation index-based data arrays
+        # for adding or re-reading data that has been refreshed 
         self._simulation_index = 0
         self._walk_back_counter = 0
+        self._refresh_index = 0  # indicates starting, lower bound index for consumers (plotRefresh)
 
         self._lock = QReadWriteLock()
 
@@ -233,6 +250,107 @@ class DataStore:
         temp = deepcopy(_velocity)
         self._lock.unlock()
         return temp
+
+    def get_new_data_values(self):
+        """ return a dictionary the new refresh_index and all simulation computed lists with
+        their updated values from _refresh_index to _simulation_index and update _refresh_index
+        to the _simulation_index to indicate the all refreshed data was collected by the consumer.
+        We only copy upto _simulation_index-1 because the simulation results may not
+        be complete for values at _simulation_index
+
+        Returns:
+            tmp_rfi- the index value in the data array where new data was appended
+                     This could have been earlier in the array, thereby overwriting
+                      previously reported data, and not just appending data to the array
+            tmp_vel - the list of newly added data since the last time here.
+            tmp_dst - same as above
+            tmp_vel - same as above
+            tmp_max - same as above
+            tmp_acc - same as above
+            tmp_mp - same as above
+            tmp_bp - same as above
+            tmp_be - same as above
+        """
+        self._lock.lockForWrite()
+        try:
+            _time = self._lap_simulation_results.time_list[self._refresh_index:
+                                                                   self._simulation_index-1]
+            tmp_time = deepcopy(_time)
+
+            _distance = self._lap_simulation_results.distance_list[self._refresh_index:
+                                                                   self._simulation_index-1]
+            tmp_dst = deepcopy(_distance)
+
+            _velocity = self._lap_simulation_results.velocity_list[self._refresh_index:
+                                                                   self._simulation_index-1]
+            tmp_vel = deepcopy(_velocity)
+
+            _max_velocity = self._track_properties.max_velocity_list[self._refresh_index:
+                                                                           self._simulation_index-1]
+            tmp_max = deepcopy(_max_velocity)
+
+            _acceleration = self._lap_simulation_results.acceleration_list[self._refresh_index:
+                                                                           self._simulation_index-1]
+            tmp_acc = deepcopy(_acceleration)
+
+            _motor_power = self._lap_simulation_results.motor_power_list[self._refresh_index:
+                                                                         self._simulation_index-1]
+            tmp_mp = deepcopy(_motor_power)
+
+            _battery_power = self._lap_simulation_results.battery_power_list[self._refresh_index:
+                                                                             self._simulation_index-1]
+            tmp_bp = deepcopy(_battery_power)
+
+            _battery_energy = self._lap_simulation_results.battery_energy_list[self._refresh_index:
+                                                                               self._simulation_index-1]
+            tmp_be = deepcopy(_battery_energy)
+        except IndexError:
+            logger.error("index out of range: {}, returning empty list",
+                         extra={'sim_index': self._refresh_index})
+            tmp_time = []
+            tmp_dst = []
+            tmp_vel = []
+            tmp_max = []
+            tmp_acc = []
+            tmp_mp = []
+            tmp_bp = []
+            tmp_be = []
+
+        # report the first index where the data got added and/or replaced
+        tmp_rfi = self._refresh_index
+
+        # remember how far in the array we copied up to data and passed to the consumer
+        self._refresh_index = self._simulation_index-1
+        self._lock.unlock()
+        newResults = {'refresh_index': tmp_rfi,
+                      'time': tmp_time,
+                      'distance': tmp_dst,
+                      'velocity': tmp_vel,
+                      'max_velocity': tmp_max,
+                      'acceleration': tmp_acc,
+                      'motor_power': tmp_mp,
+                      'battery_power': tmp_bp,
+                      'battery_energy': tmp_be}
+        return newResults
+
+    def set_refresh_index(self, new_refresh_index):
+        """ Since the walk back worked, we want to move the index to indicate
+        how far the walkback went so that consumers (MainWindow thread PlotRefresh)
+        of the data arrays can pick up the newly calculationed data
+        from _refresh_index to _simulation_index
+        Note: SimulationThread should only move _refresh_index backwards while the consumer
+        (MainWindow thread ) should only move it forward while retrieving the new data
+        (as enforced "atomically" in get_new_velocity values)
+
+        Args :
+            new_refresh_index  -  the index to all data arrays where to start reading data
+        """
+        self._lock.lockForWrite()
+        # ensure the new index is only moving backwards
+        if new_refresh_index < self._simulation_index and new_refresh_index < self._refresh_index:
+            self._refresh_index = new_refresh_index
+        self._lock.unlock()
+        return
 
     def get_acceleration_at_index(self, index):
         self._lock.lockForRead()

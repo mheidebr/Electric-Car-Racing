@@ -95,7 +95,7 @@ class MainWindow(QWidget):
         # shared via data_store
 
         self.last_plotted_index = 0
-        self._x = [0]   # our private x values for x-axis plotting
+        self._X = [0]   # our private x values for x-axis plotting
         self._time = [0]
         self._distance = [0]
         self._velocity = [0]
@@ -104,26 +104,28 @@ class MainWindow(QWidget):
         self._motor_power = [0]
         self._battery_power = [0]
         self._battery_energy = [0]
-        self.time_data_line = self.p1.plot(x=self._x, y=self._time,
+        self.time_data_line = self.p1.plot(x=self._X, y=self._time,
                                            name="Plot1", title="Time (s)")
-        self.distance_data_line = self.p2.plot(x=self._x, y=self._distance,
+        self.distance_data_line = self.p2.plot(x=self._X, y=self._distance,
                                                name="Plot2", title="Distance (m)")
-        self.velocity_data_line = self.p3.plot(x=self._x, y=self._velocity,
+        self.velocity_data_line = self.p3.plot(x=self._X, y=self._velocity,
                                                name="Plot3", title="Velocity (m/s)")
-        self.max_velocity_data_line = self.p3.plot(x=self._x, y=self._max_velocity,
+        self.max_velocity_data_line = self.p3.plot(x=self._X, y=self._max_velocity,
                                                    name="Plot3", title="Max Velocity (m/sec)",
                                                    pen='r')
-        self.acceleration_data_line = self.p4.plot(x=self._x, y=self._acceleration,
+        self.acceleration_data_line = self.p4.plot(x=self._X, y=self._acceleration,
                                                    name="Plot4", title="Acceleration (m/sec^2)")
-        self.motor_power_data_line = self.p5.plot(x=self._x, y=self._motor_power,
+        self.motor_power_data_line = self.p5.plot(x=self._X, y=self._motor_power,
                                                   name="Plot5", title="Motor Power")
-        self.battery_power_data_line = self.p6.plot(x=self._x, y=self._battery_power,
+        self.battery_power_data_line = self.p6.plot(x=self._X, y=self._battery_power,
                                                     name="Plot6", title="Battery Power")
-        self.battery_energy_data_line = self.p7.plot(x=self._x, y=self._battery_energy,
+        self.battery_energy_data_line = self.p7.plot(x=self._X, y=self._battery_energy,
                                                      name="Plot7", title="Battery Energy")
 
         # Setup the SIGNALs to be received from the worker threads
         self.simulationThread.simulationThreadSignal.connect(self.signalRcvFromSimulationThread)
+        # self.simulationThread.simulationThreadWalkBackCompleteSignal.connect(self.signalWalkBackComplete)
+
 
         # internal timer for refreshing the plots
         self.plotRefreshTimer = QTimer()
@@ -219,24 +221,25 @@ class MainWindow(QWidget):
         self.checkboxAcceleration.setChecked(False)
         self.spinboxAcceleration = QDoubleSpinBox()
         self.spinboxAcceleration.setReadOnly(True)
+        self.spinboxAcceleration.setRange(-999999, 999999)
 
         self.checkboxMotorPower = QCheckBox('Motor Power', self)
         self.checkboxMotorPower.setChecked(False)
         self.spinboxMotorPower = QDoubleSpinBox()
         self.spinboxMotorPower.setReadOnly(True)
-        self.spinboxMotorPower.setRange(0, 999999)
+        self.spinboxMotorPower.setRange(-999999, 999999)
 
         self.checkboxBatteryPower = QCheckBox('Battery Power', self)
         self.checkboxBatteryPower.setChecked(False)
         self.spinboxBatteryPower = QDoubleSpinBox()
         self.spinboxBatteryPower.setReadOnly(True)
-        self.spinboxBatteryPower.setRange(0, 999999)
+        self.spinboxBatteryPower.setRange(-999999, 999999)
 
         self.checkboxBatteryEnergy = QCheckBox('Battery Energy (j)', self)
         self.checkboxBatteryEnergy.setChecked(False)
         self.spinboxBatteryEnergy = QDoubleSpinBox()
         self.spinboxBatteryEnergy.setReadOnly(True)
-        self.spinboxBatteryEnergy.setRange(0, 999999)
+        self.spinboxBatteryEnergy.setRange(-999999, 999999)
 
         # self.userDisplayControlsGroup = QtGui.QGroupBox('User Display Controls')
         self.userDisplayControlsGroup = QGroupBox('User Controls')
@@ -291,6 +294,28 @@ class MainWindow(QWidget):
     def signalRcvFromSimulationThread(self, text):
         self.textboxStatus.setText(text)
 
+    
+    # @pyqtSlot(int)
+    # def signalWalkBackComplete(self, walk_back_index):
+        """ This function is the handler for the signal sent from SimThread that
+        the walk back is complete. We use it to refresh the graphs from the
+        passed parameter (walk_back_index) up to sim_index by 
+        1) truncating our local copy of the plotted data arrays at dataXXX[0,walk_index] then
+        2) rewinding the plotting pointer (self.last_plotted_data=walk_back_index) then
+        let the normal refresh mechanism (signalPlotRefresh) append the data
+        from walk_back_index to current_sim_index
+
+        Args:
+            walk_back_index is the index in data_store arrays where plotted data should be 
+            now be refreshed starting at this value through the latest calculation
+            (current_sim_index) 
+        Returns: 
+            Nothing
+        """
+        #self._velocity = self._velocity[0:walk_back_index]
+        # self.last_plotted_index = walk_back_index
+        # print("walk_back_index = {}".format(walk_back_index))
+
     @pyqtSlot()
     def signalPlotRefresh(self):
         # Update the GUI window to display computation status, data, and plots selected by the user
@@ -310,91 +335,93 @@ class MainWindow(QWidget):
         just plot upto the last complete record.
         """
         if current_sim_index > 0:
-            # Get the current data values and refresh the corresponding display field textbox
-            refresh_index = current_sim_index-1
-            time = self.data_store.get_time_at_index(refresh_index)
-            self.spinboxTime.setValue(time)
+            """ Refresh our private data to plot from the new (and updated/rewritten) data since
+            the last time we were here.
+            """
 
-            distance = self.data_store.get_distance_at_index(refresh_index)
-            self.spinboxDistance.setValue(distance)
+            # Get a dictionary from DataStore containing the lists of updated values
+            dictResults = self.data_store.get_new_data_values()
+            new_rfi = dictResults['refresh_index']
+            updated_time = dictResults['time']
+            updated_distance = dictResults['distance']
+            updated_velocity = dictResults['velocity']
+            updated_max_velocity = dictResults['max_velocity']
+            updated_acceleration = dictResults['acceleration']
+            updated_motor_power = dictResults['motor_power']
+            updated_battery_power = dictResults['battery_power']
+            # updated_battery_energy = dictResults['battery_energy']
+            # print('len(_x)={} len(_velocity)={}'.format(len(self._x), len(self._velocity)))
+            # print('Adding new {} velocity data points starting at index {}'.format(
+            #                                                    len(updated_velocity), new_rfi))
 
-            velocity = self.data_store.get_velocity_at_index_for_display(refresh_index)
-            self.spinboxVelocity.setValue(velocity)
+            # remove any old data that was recalculated during walk back before appending
+            # that refreshed data and any new, additional data
+            self._time = self._time[0:new_rfi]
+            self._distance = self._distance[0:new_rfi]
+            self._velocity = self._velocity[0:new_rfi]
+            self._max_velocity = self._max_velocity[0:new_rfi]
+            self._acceleration = self._acceleration[0:new_rfi]
+            self._motor_power = self._motor_power[0:new_rfi]
+            self._battery_power = self._battery_power[0:new_rfi]
+            # self._battery_energy = self._battery_energy[0:new_rfi]
+            # print('After resizing _velocity is len={}'.format(len(self._velocity)))
 
-            acceleration = self.data_store.get_acceleration_at_index(refresh_index)
-            self.spinboxAcceleration.setValue(acceleration)
+            # append on newly retrieved data
+            self._time = self._time + updated_time
+            self._distance = self._distance + updated_distance
+            self._velocity = self._velocity + updated_velocity
+            self._max_velocity = self._max_velocity + updated_max_velocity
+            self._acceleration = self._acceleration + updated_acceleration
+            self._motor_power = self._motor_power + updated_motor_power
+            self._battery_power = self._battery_power + updated_battery_power
+            # self._battery_energy = self._battery_energy + updated_battery_energy
+            self._X = list(range(0, len(self._velocity)))
+            # print('After appending, len(_X) = {} len(_velocity) = {}'
+            #        .format(len(self._X), len(self._velocity)))
 
-            motor_power = self.data_store.get_motor_power_at_index(refresh_index)
-            self.spinboxMotorPower.setValue(motor_power)
-
-            battery_power = self.data_store.get_battery_power_at_index(refresh_index)
-            self.spinboxBatteryPower.setValue(battery_power)
-
-            # TBD not yet implemented in physics_equations
-            # battery_energy = self.data_store.get_battery_energy_at_index(refresh_index)
-            # self.spinboxBatteryEnergy.setValue(battery_energy)
-
-            # increase the x-axis values to be plotted with
-            self._x = self._x+list(range(self.last_plotted_index, refresh_index))
-
-            # append to our private vars the new data created by the simulation since last here.
-
-            self._time = self._time + \
-                self.data_store.get_time_in_range(self.last_plotted_index, refresh_index)
-            self._distance = self._distance + \
-                self.data_store.get_distance_in_range(self.last_plotted_index, refresh_index)
-            self._velocity = self._velocity + \
-                self.data_store.get_velocity_in_range(self.last_plotted_index, refresh_index)
-            self._max_velocity = self._max_velocity + \
-                self.data_store.get_track_max_velocity_in_range(self.last_plotted_index,
-                                                                refresh_index)
-            self._acceleration = self._acceleration + \
-                self.data_store.get_acceleration_in_range(self.last_plotted_index, refresh_index)
-            self._motor_power = self._motor_power + \
-                self.data_store.get_motor_power_in_range(self.last_plotted_index, refresh_index)
-            self._battery_power = self._battery_power + \
-                self.data_store.get_battery_power_in_range(self.last_plotted_index, refresh_index)
-            self._battery_energy = self._battery_energy + \
-                self.data_store.get_battery_energy_in_range(self.last_plotted_index, refresh_index)
-
-            # remember simulation_index of the last list values retrieved from the data_store
-            # so we can only get the new ones next time
-            self.last_plotted_index = refresh_index
+            # update GUI with the last (current) data
+            self.spinboxTime.setValue(self._time[-1])
+            self.spinboxDistance.setValue(self._distance[-1])
+            self.spinboxVelocity.setValue(self._velocity[-1])
+            self.spinboxAcceleration.setValue(self._acceleration[-1])
+            self.spinboxMotorPower.setValue(self._motor_power[-1])
+            self.spinboxBatteryPower.setValue(self._battery_power[-1])
+            # self.spinboxBatteryEnergy.setValue(self._battery_energy[-1])
 
             # alway plot/show the Time plot because the other plots are "linked" to it
             # so user can scroll around
-            self.time_data_line.setData(self._x, self._time)
+            self.time_data_line.setData(self._X, self._time)
 
             # selectively display the plots based on the checkboxes
             if self.checkboxDistance.isChecked() is True:
                 self.p2.show()
-                self.distance_data_line.setData(self._x, self._distance)
+                self.distance_data_line.setData(self._X, self._distance)
             else:
                 self.p2.hide()
 
             if self.checkboxVelocity.isChecked() is True:
                 self.p3.show()
-                self.max_velocity_data_line.setData(self._x, self._max_velocity)
-                self.velocity_data_line.setData(self._x, self._velocity)
+                self.max_velocity_data_line.setData(self._X, self._max_velocity)
+                self.velocity_data_line.setData(self._X, self._velocity)
 
             else:
                 self.p3.hide()
 
             if self.checkboxAcceleration.isChecked() is True:
                 self.p4.show()
-                self.acceleration_data_line.setData(self._x, self._acceleration)
+                self.acceleration_data_line.setData(self._X, self._acceleration)
             else:
                 self.p4.hide()
 
             if self.checkboxMotorPower.isChecked() is True:
                 self.p5.show()
-                self.motor_power_data_line.setData(self._x, self._motor_power)
+                self.motor_power_data_line.setData(self._X, self._motor_power)
             else:
                 self.p5.hide()
 
             if self.checkboxBatteryPower.isChecked() is True:
                 self.p6.show()
-                self.battery_power_data_line.setData(self._x, self._battery_power)
+                self.battery_power_data_line.setData(self._X, self._battery_power)
             else:
                 self.p6.hide()
 
@@ -402,9 +429,7 @@ class MainWindow(QWidget):
             if self.checkboxBatteryEnergy.isChecked() is True:
                 #self.p7.show()
                 #self.p7.plot(x=x, y=_battery_energy, name="Plot7", title="Battery Energy (joules)")
-                self.battery_energy_data_line.setData(self._x, self._battery_energy)
+                self.battery_energy_data_line.setData(self._X, self._battery_energy)
             else:
                 self.p7.hide()
             """
-
-

@@ -9,7 +9,7 @@ import logging
 # from project_argparser import SingleArg
 from PyQt5.QtCore import (QThread, pyqtSignal, pyqtSlot)
 import cProfile
-
+import ptvsd
 from datastore import (DataStore, RacingSimulationResults)
 from logging_config import configure_logging
 from physics_equations import (max_negative_power_physics_simulation,
@@ -27,7 +27,7 @@ from track_properties import (TrackProperties,
 class SimulationThread(QThread):
     # Define the Signals we'll be emitting to the MainWindow
     simulationThreadSignal = pyqtSignal(str)
-    simulationThreadPlotSignal = pyqtSignal(int)
+    simulationThreadWalkBackCompleteSignal = pyqtSignal(int)  # sim_index where walkback completed
     breakpointDistance = 0
 
     def __init__(self, passed_data_store, logger, parent=None):
@@ -128,6 +128,9 @@ class SimulationThread(QThread):
                         extra={'sim_index': self._data_store.get_simulation_index()})
             # set the breakpoint to be a very large number to indicate run to completion
             self.breakpointDistance = 9999999
+            # (re)start computing and acknowledge to MainWindow by sending a signal back
+            self.simulationThreadSignal.emit("Calculating...")
+            # "state" variable indicating thread should be calculating
             self.simulationComputing = True
         else:
             # run to the distance value point in the track
@@ -282,6 +285,7 @@ class SimulationThread(QThread):
 
 
         """
+        ptvsd.debug_this_thread()
         # performance increases by assigning local functions
         # https://towardsdatascience.com/10-techniques-to-speed-up-python-runtime-95e213e925dc
         add_physics_result_to_datastore = self._data_store.add_physics_results_to_lap_results
@@ -371,8 +375,12 @@ class SimulationThread(QThread):
             else:
                 raise("Something wrong in walk back! Please contact you local dev for more information")
 
-        # walk back complete, reset walk back index for next time
-        self._data_store.reset_walk_back_counter()    
+        # walk back complete, let the main graphing entity know where we ended up
+        # refresh_index = self._data_store.get_simulation_index()-walk_back_index
+        # self. simulationThreadWalkBackCompleteSignal.emit(walk_back_index)
+        self._data_store.set_refresh_index(walk_back_index)
+        # reset walk back index for next time
+        self._data_store.reset_walk_back_counter()
  
 
     def run(self):
