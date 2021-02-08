@@ -413,11 +413,11 @@ class MainWindow(QWidget):
             """
 
 
-if __name__ == "__main__":
-    args= call_args()
-    if logging_arg.arg_check(args.logging):
-        configure_logging()
-    MainApp = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(cProfile.runctx("MainApp.exec_()", globals(), locals(), 'profile-display.out'))
+#if __name__ == "__main__":
+#    args= call_args()
+#    #if logging_arg.arg_check(args.logging):
+#        #configure_logging()
+#    MainApp = QApplication(sys.argv)
+#    window = MainWindow()
+#    window.show()
+#    sys.exit(cProfile.runctx("MainApp.exec_()", globals(), locals(), 'profile-display.out'))
