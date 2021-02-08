@@ -23,6 +23,8 @@ class SingleArg:
     
     #opens csv and creates dict with keys corresponding to the headers of the fastsim car csv file format
     def open_car_dict(self, input):
+        if input == None:
+            input = self.off_msg
         if not os.path.exists(input):
             raise argparse.ArgumentTypeError('The file %s is not in the working directory' % input)
         else:
@@ -35,16 +37,18 @@ class SingleArg:
     
     #opens csv file and returns a dict with keys "air_density" and integers representing breakpoints
     def open_track_dict(self, input):
+        if input == None:
+            input = self.off_msg
         if not os.path.exists(input):
             raise argparse.ArgumentTypeError('The file %s is not in the working directory' % input)
         else:
             with open(input, newline='') as csv_file:
-                csv_data = list(csv.reader(csv_file))[0]
+                csv_data = list(csv.reader(csv_file))[1]
         track_dict = dict()
-        track_dict["air_density"] = csv_data[0]
+        track_dict["air_density"] = eval_type(csv_data[0])
         csv_data.pop(0)
         for i in range(int(len(csv_data)/2)):
-            track_dict[float(csv_data[2*i])] = eval_type(csv_data[(2*i)+1])
+            track_dict[eval_type(csv_data[2*i])] = eval_type(csv_data[(2*i)+1])
         return track_dict
 
 
@@ -54,7 +58,7 @@ def call_args():
 
     arg_dict = dict()
     arg_dict["logging_arg"] = SingleArg(parser, '-l', '--logging', 'Turn logging on or off — enter either "on" or "off". This defaults to off with no argument.', 'on', 'off')
-    arg_dict["car_arg"] = SingleArg(parser, '-c', '--car', 'Load a custom car configuration — defaults to included file default_car.csv.', 'void', 'default_car.csv')
+    arg_dict["car_arg"] = SingleArg(parser, '-c', '--car', 'Load a custom car configuration — defaults to included file default_car.csv.', 'void', 'fastsim_car_test.csv')
     arg_dict["track_arg"] = SingleArg(parser, '-t', '--track', 'Load a custom track configuration — defaults to included file track.csv.', 'void', 'high_plains_track.csv')
     arg_dict["output_arg"] = SingleArg(parser, '-o', '--output', 'Specify a name for an output file — defaults to "output.csv" by default.', 'void', 'output.csv')
     arg_dict["parsed_args"] = parser.parse_args()
@@ -65,7 +69,10 @@ def call_args():
 def eval_type(input):
     try:
         input = ast.literal_eval(input)
-    except ValueError:
+    except:
         pass
     return input
+
+if __name__ == "__main__":
+    pass
     
