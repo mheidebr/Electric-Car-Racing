@@ -151,11 +151,11 @@ class DataStore:
     def get_time_at_index(self, index):
         self._lock.lockForRead()
         try:
-            _time = self._lap_simulation_results.time_list[index]
+            _time = self._lap_simulation_results.time_cumulative_list[index]
         except IndexError:
             logger.info("index out of range: {}, returning last time",
-                        extra={'sim_index': index})
-            _time = self._lap_simulation_results.time_list[-1]
+                    extra={'sim_index': index})
+            _time = self._lap_simulation_results.time_cumulative_list[-1]
         temp = deepcopy(_time)
         self._lock.unlock()
         return temp
@@ -163,11 +163,11 @@ class DataStore:
     def get_time_list(self, num_index_samples):
         self._lock.lockForRead()
         try:
-            _time = self._lap_simulation_results.time_list[0:num_index_samples]
+            _time = self._lap_simulation_results.time_cumulative_list[0:num_index_samples]
         except IndexError:
             logger.error("index out of range: {}, returning last time",
-                         extra={'sim_index': num_index_samples})
-            _time = self._lap_simulation_results.time_list
+                    extra={'sim_index': num_index_samples})
+            _time = self._lap_simulation_results.time_cumulative_list
         temp = deepcopy(_time)
         self._lock.unlock()
         return temp
@@ -175,11 +175,11 @@ class DataStore:
     def get_time_in_range(self, begin_index, end_index):
         self._lock.lockForRead()
         try:
-            _time = self._lap_simulation_results.time_list[begin_index:end_index]
+            _time = self._lap_simulation_results.time_cumulative_list[begin_index:end_index]
         except IndexError:
             logger.error("index out of range: {}, returning last time",
-                         extra={'sim_index': end_index})
-            _time = self._lap_simulation_results.time_list[-1]
+                    extra={'sim_index': end_index})
+            _time = self._lap_simulation_results.time_cumulative_list[-1]
         temp = deepcopy(_time)
         self._lock.unlock()
         return temp
@@ -390,11 +390,11 @@ class DataStore:
     def get_distance_at_index(self, index):
         self._lock.lockForRead()
         try:
-            _distance = self._lap_simulation_results.distance_list[index]
+            _distance = self._lap_simulation_results.distance_cumulative_list[index]
         except IndexError:
             logger.error("index out of range: {}, returning last distance",
-                         extra={'sim_index': index})
-            _distance = self._lap_simulation_results.distance_list[-1]
+                    extra={'sim_index': index})
+            _distance = self._lap_simulation_results.distance_cumulative_list[-1]
         temp = deepcopy(_distance)
         self._lock.unlock()
         return temp
@@ -402,11 +402,11 @@ class DataStore:
     def get_distance_list(self, num_index_samples):
         self._lock.lockForRead()
         try:
-            _distance = self._lap_simulation_results.distance_list[0:num_index_samples]
+            _distance = self._lap_simulation_results.distance_cumulative_list[0:num_index_samples]
         except IndexError:
             logger.error("index out of range: {}, returning last distance",
-                         extra={'sim_index': num_index_samples})
-            _distance = self._lap_simulation_results.distance_list[-1]
+                    extra={'sim_index':num_index_samples})
+            _distance = self._lap_simulation_results.distance_cumulative_list[-1]
         temp = deepcopy(_distance)
         self._lock.unlock()
         return temp
@@ -414,11 +414,11 @@ class DataStore:
     def get_distance_in_range(self, begin_index, end_index):
         self._lock.lockForRead()
         try:
-            _distance = self._lap_simulation_results.distance_list[begin_index:end_index]
+            _distance = self._lap_simulation_results.distance_cumulative_list[begin_index:end_index]
         except IndexError:
             logger.error("index out of range: {}, returning last distance",
-                         extra={'sim_index': end_index})
-            _distance = self._lap_simulation_results.distance_list[-1]
+                    extra={'sim_index':end_index})
+            _distance = self._lap_simulation_results.distance_cumulative_list[-1]
         temp = deepcopy(_distance)
         self._lock.unlock()
         return temp
@@ -601,12 +601,12 @@ class LapVelocitySimulationResults():
 
         Args:
             length (int): length of output arrays, this should be the
-                          length of the track lists (ex: track.distance_list)
+                          length of the track lists (ex: track.distance_cumulative_list)
         """
         self.end_velocity = 0
         self.lap_time = 0
-        self.time_list = []
-        self.distance_list = []
+        self.time_cumulative_list = []
+        self.distance_cumulative_list = []
         self.motor_power_list = []
         self.battery_power_list = []
         self.battery_energy_list = []
@@ -619,23 +619,23 @@ class LapVelocitySimulationResults():
         the initialization of the datastore.
         """
 
-        self.time_list = []
-        self.distance_list = []
+        self.time_cumulative_list = []
+        self.distance_cumulative_list = []
         self.motor_power_list = []
-        self.battery_power_list = []
         self.motor_energy_list = []
         self.acceleration_list = []
         self.velocity_list = []
         self.battery_energy_list = []
         self.battery_power_list = []
+        self.battery_energy_cumulative_list = []
         self.physics_results_profile = []
 
         physics_result_filler = PhysicsCalculationOutput(1, 1, 1, 1, 1, 1)
 
         # length - 1 is for the because the first element is added above
         for i in range(length):
-            self.time_list.append(0)
-            self.distance_list.append(0)
+            self.time_cumulative_list.append(0)
+            self.distance_cumulative_list.append(0)
             self.motor_power_list.append(0)
             self.battery_power_list.append(0)
             self.motor_energy_list.append(0)
@@ -643,6 +643,7 @@ class LapVelocitySimulationResults():
             self.velocity_list.append(0)
             self.battery_energy_list.append(0)
             self.battery_power_list.append(0)
+            self.battery_energy_cumulative_list.append(0)
             self.physics_results_profile.append(physics_result_filler)
 
     def add_physics_results(self, physics_results, index):
@@ -655,11 +656,10 @@ class LapVelocitySimulationResults():
 
         """
         self.physics_results_profile[index] = physics_results
-
-        self.distance_list[index] = (self.distance_list[index - 1] +
-                                     physics_results.distance_traveled)
-        self.time_list[index] = (self.time_list[index - 1] +
-                                 physics_results.time_of_segment)
+        self.distance_cumulative_list[index] = (self.distance_cumulative_list[index - 1] +
+                                                physics_results.distance_traveled)
+        self.time_cumulative_list[index] = (self.time_cumulative_list[index - 1] +
+                                            physics_results.time_of_segment)
         self.motor_power_list[index] = physics_results.motor_power
         self.motor_energy_list[index] = (self.motor_energy_list[index - 1] +
                                          physics_results.energy_differential_of_motor)
@@ -667,3 +667,5 @@ class LapVelocitySimulationResults():
         self.velocity_list[index] = physics_results.final_velocity
         self.battery_energy_list[index] = physics_results.battery_energy
         self.battery_power_list[index] = physics_results.battery_power
+        self.battery_energy_cumulative_list[index] = (self.battery_energy_cumulative_list[index - 1] +
+                                                      physics_results.battery_energy)
