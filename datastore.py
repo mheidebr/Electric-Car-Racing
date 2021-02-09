@@ -232,6 +232,7 @@ class DataStore:
         except IndexError:
             logger.error("index out of range: {}, returning last velocity",
                          extra={'sim_index': num_index_samples})
+
             _velocity = self._lap_simulation_results.velocity_list
         temp = deepcopy(_velocity)
         self._lock.unlock()
@@ -625,6 +626,8 @@ class LapVelocitySimulationResults():
         self.motor_energy_list = []
         self.acceleration_list = []
         self.velocity_list = []
+        self.battery_energy_list = []
+        self.battery_power_list = []
         self.physics_results_profile = []
 
         physics_result_filler = PhysicsCalculationOutput(1, 1, 1, 1, 1, 1)
@@ -638,6 +641,8 @@ class LapVelocitySimulationResults():
             self.motor_energy_list.append(0)
             self.acceleration_list.append(0)
             self.velocity_list.append(0)
+            self.battery_energy_list.append(0)
+            self.battery_power_list.append(0)
             self.physics_results_profile.append(physics_result_filler)
 
     def add_physics_results(self, physics_results, index):
@@ -660,3 +665,5 @@ class LapVelocitySimulationResults():
                                          physics_results.energy_differential_of_motor)
         self.acceleration_list[index] = physics_results.acceleration
         self.velocity_list[index] = physics_results.final_velocity
+        self.battery_energy_list[index] = physics_results.battery_energy
+        self.battery_power_list[index] = physics_results.battery_power

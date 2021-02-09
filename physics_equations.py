@@ -31,6 +31,8 @@ class PhysicsCalculationOutput():
         self.energy_differential_of_motor = energy_differential_of_motor
         self.acceleration = acceleration
         self.motor_power = self.energy_differential_of_motor / self.time_of_segment
+        self.battery_power = self.motor_power
+        self.battery_energy = self.energy_differential_of_motor
 
 
 def rotational_inertia_calculation(rotational_mass, effective_radius):
