@@ -124,8 +124,6 @@ class MainWindow(QWidget):
 
         # Setup the SIGNALs to be received from the worker threads
         self.simulationThread.simulationThreadSignal.connect(self.signalRcvFromSimulationThread)
-        # self.simulationThread.simulationThreadWalkBackCompleteSignal.connect(self.signalWalkBackComplete)
-
 
         # internal timer for refreshing the plots
         self.plotRefreshTimer = QTimer()
@@ -293,28 +291,6 @@ class MainWindow(QWidget):
     @pyqtSlot(str)
     def signalRcvFromSimulationThread(self, text):
         self.textboxStatus.setText(text)
-
-    
-    # @pyqtSlot(int)
-    # def signalWalkBackComplete(self, walk_back_index):
-        """ This function is the handler for the signal sent from SimThread that
-        the walk back is complete. We use it to refresh the graphs from the
-        passed parameter (walk_back_index) up to sim_index by 
-        1) truncating our local copy of the plotted data arrays at dataXXX[0,walk_index] then
-        2) rewinding the plotting pointer (self.last_plotted_data=walk_back_index) then
-        let the normal refresh mechanism (signalPlotRefresh) append the data
-        from walk_back_index to current_sim_index
-
-        Args:
-            walk_back_index is the index in data_store arrays where plotted data should be 
-            now be refreshed starting at this value through the latest calculation
-            (current_sim_index) 
-        Returns: 
-            Nothing
-        """
-        #self._velocity = self._velocity[0:walk_back_index]
-        # self.last_plotted_index = walk_back_index
-        # print("walk_back_index = {}".format(walk_back_index))
 
     @pyqtSlot()
     def signalPlotRefresh(self):
