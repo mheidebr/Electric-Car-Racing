@@ -39,20 +39,18 @@ from datastore import (DataStore)
 from logging_config import configure_logging
 from simulation import SimulationThread
 
-logger = logging.getLogger(__name__)
-
 
 class MainWindow(QWidget):
 
     # define the SIGNALs that MainWindow will send to other threads
     mainWindowStartCalculatingSignal = pyqtSignal(int)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, data_store, simulationThread, logger, *args, **kwargs):
         QWidget.__init__(self, parent=None)
 
-        self.data_store = DataStore()
-        logger.info("MainWindow: DataStore initialized",
-                    extra={'sim_index': self.data_store.get_simulation_index()})
+        self.data_store = data_store
+        self.simulationThread = simulationThread
+        self.logger = logger
 
         # Create GUI related resources
         self.setWindowTitle('Race Simulation')
@@ -123,9 +121,6 @@ class MainWindow(QWidget):
                                                     name="Plot6", title="Battery Power")
         self.battery_energy_data_line = self.p7.plot(x=self._x, y=self._battery_energy,
                                                      name="Plot7", title="Battery Energy")
-
-        # Create the instances of our worker threads
-        self.simulationThread = SimulationThread(self.data_store)
 
         # Setup the SIGNALs to be received from the worker threads
         self.simulationThread.simulationThreadSignal.connect(self.signalRcvFromSimulationThread)
@@ -301,7 +296,7 @@ class MainWindow(QWidget):
         # Update the GUI window to display computation status, data, and plots selected by the user
         # This is called periodically because of the signal emitted from plotRefreshTimer
         current_sim_index = (self.data_store.get_simulation_index())
-        logger.info("MainWindow:", extra={'sim_index': current_sim_index})
+        self.logger.info("MainWindow:", extra={'sim_index': current_sim_index})
         self.textboxSimulationIndex.setText("{}".format(current_sim_index))
 
         """

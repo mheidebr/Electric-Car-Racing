@@ -23,8 +23,6 @@ from track_properties import (TrackProperties,
 # from track_properties import (TrackProperties,
 #                              simple_track)
 
-logger = logging.getLogger(__name__)
-
 
 class SimulationThread(QThread):
     # Define the Signals we'll be emitting to the MainWindow
@@ -32,8 +30,11 @@ class SimulationThread(QThread):
     simulationThreadPlotSignal = pyqtSignal(int)
     breakpointDistance = 0
 
-    def __init__(self, passed_data_store, parent=None):
+    def __init__(self, passed_data_store, logger, parent=None):
         QThread.__init__(self, parent)
+        
+        self.logger = logger
+
         self.exiting = False
         self.setObjectName("SimulationThread")
 
@@ -112,18 +113,18 @@ class SimulationThread(QThread):
          if necessary, to stop computing.
         """
         # print("Breakpoint Distance value:{}".format(distance_value))
-        logger.info('Slot:thread_start_calculating :',
+        self.logger.info('Slot:thread_start_calculating :',
                     extra={'sim_index': self._data_store.get_simulation_index()})
 
         if distance_value == 0:
-            logger.info('Slot:thread_start_calculating SINGLE STEP NOT IMPLEMENTED:',
+            self.logger.info('Slot:thread_start_calculating SINGLE STEP NOT IMPLEMENTED:',
                         extra={'sim_index': self._data_store.get_simulation_index()})
 
             # TODO - finish this breakpoint case
             self.simulationComputing = False
 
         elif distance_value == -1:
-            logger.info('Slot:thread_start_calculating RUN TO COMPLETION :',
+            self.logger.info('Slot:thread_start_calculating RUN TO COMPLETION :',
                         extra={'sim_index': self._data_store.get_simulation_index()})
             # set the breakpoint to be a very large number to indicate run to completion
             self.breakpointDistance = 9999999
@@ -132,7 +133,7 @@ class SimulationThread(QThread):
             # run to the distance value point in the track
             sim_index = self._data_store.get_simulation_index()
             if distance_value > self._data_store.get_distance_at_index(sim_index):
-                logger.info('Slot:thread_start_calculating RUN TO DISTANCE :',
+                self.logger.info('Slot:thread_start_calculating RUN TO DISTANCE :',
                             extra={'sim_index': sim_index})
                 # requested breakpoint is further down the track
                 self.breakpointDistance = distance_value
@@ -141,14 +142,14 @@ class SimulationThread(QThread):
                 # "state" variable indicating thread should be calculating
                 self.simulationComputing = True
             else:
-                logger.info('Slot:thread_start_calculating PAST REQUESTED DISTANCE :',
+                self.logger.info('Slot:thread_start_calculating PAST REQUESTED DISTANCE :',
                             extra={'sim_index': sim_index})
                 # simulation has already past this point in the track, don't proceed
                 self.simulationComputing = False
 
     @pyqtSlot()
     def thread_stop_calculating(self):
-        logger.info('Slot:thread_stop_calculating :',
+        self.logger.info('Slot:thread_stop_calculating :',
                     extra={'sim_index': self._data_store.get_simulation_index()})
         # Now send a signal back to the main window
         self.simulationThreadSignal.emit("Paused")
@@ -204,7 +205,7 @@ class SimulationThread(QThread):
         # need to populate the time profile be the same length as the distance list
         # to complete a lap of simulation
         list_len = len(track.distance_list)
-        logger.debug('track.distance_list length={}'.format(list_len),
+        self.logger.debug('track.distance_list length={}'.format(list_len),
                      extra={'sim_index': self._data_store.get_simulation_index()})
 
         # TODO - Add self.simulationComputing to loop control to while
@@ -230,7 +231,7 @@ class SimulationThread(QThread):
                 if get_final_velocity(sim_index) > track.max_velocity_list[sim_index]:
                     # velocity constraint violated!!
                     # start walking back until velocity constraint at sim_index is met
-                    logger.debug("velocity constraint violated starting walk back, current v: {}, max: {}"
+                    self.logger.debug("velocity constraint violated starting walk back, current v: {}, max: {}"
                         .format(physics_results.final_velocity, track.max_velocity_list[sim_index]),
                         extra={'sim_index': self._data_store.get_simulation_index()})
                     self.walk_back(track.max_velocity_list[sim_index], track, car)
@@ -255,11 +256,11 @@ class SimulationThread(QThread):
 
                 # in any case, wait until user gives us a new condition to continue computing
                 time.sleep(1.0)
-                logger.debug("waiting for simulationComputing==True",
+                self.logger.debug("waiting for simulationComputing==True",
                              extra={'sim_index': sim_index})
         # end of while data_store.get_simulation_index() < list_len:
 
-        logger.info("SIMULATION COMPLETE!", extra={'sim_index': 'N/A'})
+        self.logger.info("SIMULATION COMPLETE!", extra={'sim_index': 'N/A'})
         self.simulationThreadSignal.emit("Finished!")
         self._data_store.exit_event.set()
 
@@ -332,11 +333,11 @@ class SimulationThread(QThread):
             # the previous index
             comparison_velocity = get_final_velocity(walk_back_index - 1)  # comparing against the final v
 
-            logger.debug("walk_back_index: {}, end_v: {}, start_v: {}"
+            self.logger.debug("walk_back_index: {}, end_v: {}, start_v: {}"
                         .format(walk_back_index, current_velocity, comparison_velocity),
                         extra={'sim_index': self._data_store.get_simulation_index()})
 
-            logger.debug("velocity: {}"
+            self.logger.debug("velocity: {}"
                          .format(current_velocity),
                          extra={'sim_index': walk_back_index})
 
@@ -345,7 +346,7 @@ class SimulationThread(QThread):
                                                                             distance_of_travel,
                                                                             car,
                                                                             air_density)
-            logger.debug("physics.initial_v: {}, current_v: {}, comparison_v: {}, walk_indx: {}, walk_cnt: {}"
+            self.logger.debug("physics.initial_v: {}, current_v: {}, comparison_v: {}, walk_indx: {}, walk_cnt: {}"
                         .format(physics_results.initial_velocity, current_velocity, comparison_velocity, walk_back_index, self._data_store.get_walk_back_counter()),
                         extra={'sim_index': self._data_store.get_simulation_index()})                                                            
             # compare resulting velocity against datastore velocity
@@ -365,7 +366,7 @@ class SimulationThread(QThread):
                                                             air_density)
                 add_physics_result_to_datastore(physics_results, walk_back_index)
                 walk_back_status = "walk back complete"
-                logger.debug("walkback complete, constrained physics",
+                self.logger.debug("walkback complete, constrained physics",
                         extra={'sim_index': self._data_store.get_simulation_index()})
             else:
                 raise("Something wrong in walk back! Please contact you local dev for more information")
@@ -378,7 +379,7 @@ class SimulationThread(QThread):
         # Note: This is never called directly. It is called by Qt once the
         # thread environment with the thread's start() method has been setup,
         # and then runs "continuously"
-        logger.info("SimulationThread: entering cProfile.runctx() ",
+        self.logger.info("SimulationThread: entering cProfile.runctx() ",
                     extra={'sim_index': 'N/A'})
 
         # profiling tool, look at results with runsnake:
