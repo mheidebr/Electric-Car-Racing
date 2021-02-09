@@ -7,7 +7,7 @@ class SingleArg:
 
     def __init__(self, parser, key, lng_key, help_msg, on_msg, off_msg):
         #Adds an argument with the key (ex: -l), name (ex: --logging), and help message to be displayed when entering -h
-        parser.add_argument(key, lng_key, type=str, help=help_msg)
+        parser.add_argument(key, lng_key, type=str, help=help_msg, default=off_msg)
         #This sets the strings for which input will be checked against in arg_check()
         self.on_msg = on_msg
         self.off_msg = off_msg
