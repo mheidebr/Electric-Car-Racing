@@ -33,6 +33,70 @@ class SingleArg:
         car_dict = dict()
         for i in range(len(csv_data[0])):
             car_dict[csv_data[0][i]] = eval_type(csv_data[1][i]) 
+
+        #Summing total car mass -- function borrowed from fastsim and adapted
+
+        """Calculate total vehicle mass.  Sum up component masses if 
+        positive real number is not specified for self.vehOverrideKg"""
+        ess_mass_kg = 0
+        mc_mass_kg = 0
+        fc_mass_kg = 0
+        fs_mass_kg = 0
+        if (isinstance(car_dict["vehOverrideKg"], int)):
+            if (not(car_dict["vehOverrideKg"] > 0)):
+                if car_dict["maxEssKwh"] == 0 or car_dict["maxEssKw"] == 0:
+                    ess_mass_kg = 0.0
+                else:
+                    ess_mass_kg = ((car_dict["maxEssKwh"] * car_dict["essKgPerKwh"]) +
+                                car_dict["essBaseKg"]) * car_dict["compMassMultiplier"]
+                if car_dict["maxMotorKw"] == 0:
+                    mc_mass_kg = 0.0
+                else:
+                    mc_mass_kg = (car_dict["mcPeBaseKg"]+(car_dict["mcPeKgPerKw"]
+                                                    * car_dict["maxMotorKw"])) * car_dict["compMassMultiplier"]
+                if car_dict["maxFuelConvKw"] == 0:
+                    fc_mass_kg = 0.0
+                else:
+                    fc_mass_kg = (((1 / car_dict["fuelConvKwPerKg"]) * car_dict["maxFuelConvKw"] +
+                                car_dict["fuelConvBaseKg"])) * car_dict["compMassMultiplier"]
+                if car_dict["maxFuelStorKw"] == 0:
+                    fs_mass_kg = 0.0
+                else:
+                    fs_mass_kg = ((1 / car_dict["fuelStorKwhPerKg"]) *
+                                car_dict["fuelStorKwh"]) * car_dict["compMassMultiplier"]
+                car_dict["vehKg"] = car_dict["cargoKg"] + car_dict["gliderKg"] + car_dict["transKg"] * \
+                    car_dict["compMassMultiplier"] + ess_mass_kg + \
+                    mc_mass_kg + fc_mass_kg + fs_mass_kg
+            #if positive real number is specified for vehOverrideKg, use that
+            else:
+                car_dict["vehKg"] = car_dict["vehOverrideKg"]
+        else:
+            if car_dict["maxEssKwh"] == 0 or car_dict["maxEssKw"] == 0:
+                ess_mass_kg = 0.0
+            else:
+                ess_mass_kg = ((car_dict["maxEssKwh"] * car_dict["essKgPerKwh"]) +
+                            car_dict["essBaseKg"]) * car_dict["compMassMultiplier"]
+            if car_dict["maxMotorKw"] == 0:
+                mc_mass_kg = 0.0
+            else:
+                mc_mass_kg = (car_dict["mcPeBaseKg"]+(car_dict["mcPeKgPerKw"]
+                                                * car_dict["maxMotorKw"])) * car_dict["compMassMultiplier"]
+            if car_dict["maxFuelConvKw"] == 0:
+                fc_mass_kg = 0.0
+            else:
+                fc_mass_kg = (((1 / car_dict["fuelConvKwPerKg"]) * car_dict["maxFuelConvKw"] +
+                            car_dict["fuelConvBaseKg"])) * car_dict["compMassMultiplier"]
+            if car_dict["maxFuelStorKw"] == 0:
+                fs_mass_kg = 0.0
+            else:
+                fs_mass_kg = ((1 / car_dict["fuelStorKwhPerKg"]) *
+                            car_dict["fuelStorKwh"]) * car_dict["compMassMultiplier"]
+            car_dict["vehKg"] = car_dict["cargoKg"] + car_dict["gliderKg"] + car_dict["transKg"] * \
+                car_dict["compMassMultiplier"] + ess_mass_kg + \
+                mc_mass_kg + fc_mass_kg + fs_mass_kg
+        
+        #End of fastsim code
+        
         return car_dict
     
     #opens csv file and returns a dict with keys "air_density" and integers representing breakpoints
@@ -74,5 +138,9 @@ def eval_type(input):
     return input
 
 if __name__ == "__main__":
-    pass
+    args = call_args()
+    car_data = args["car_arg"].open_car_dict(args["parsed_args"].car)
+
+    print(car_data)
+
     
