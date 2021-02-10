@@ -34,6 +34,7 @@ class SingleArg:
         for i in range(len(csv_data[0])):
             car_dict[csv_data[0][i]] = eval_type(csv_data[1][i]) 
 
+        #TODO JM 2/9/21 Clean up 37-99 and possibly import fastsim functions to take care of this
         #Summing total car mass -- function borrowed from fastsim and adapted
 
         """Calculate total vehicle mass.  Sum up component masses if 
@@ -129,6 +130,7 @@ def call_args():
 
     return arg_dict
 
+#TODO JM 2/9/21 -- Find another way to convert types
 #for flexible type conversion -- may not be a permanent solution
 def eval_type(input):
     try:
