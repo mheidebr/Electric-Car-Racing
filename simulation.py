@@ -9,7 +9,7 @@ import logging
 # from project_argparser import SingleArg
 from PyQt5.QtCore import (QThread, pyqtSignal, pyqtSlot)
 import cProfile
-import ptvsd
+#import ptvsd
 from datastore import (DataStore, RacingSimulationResults)
 from logging_config import configure_logging
 from physics_equations import (max_negative_power_physics_simulation,
@@ -285,7 +285,7 @@ class SimulationThread(QThread):
 
 
         """
-        ptvsd.debug_this_thread()
+        #ptvsd.debug_this_thread()
         # performance increases by assigning local functions
         # https://towardsdatascience.com/10-techniques-to-speed-up-python-runtime-95e213e925dc
         add_physics_result_to_datastore = self._data_store.add_physics_results_to_lap_results
