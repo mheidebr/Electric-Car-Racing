@@ -277,14 +277,13 @@ def reverse_dececceleration_calculation(final_velocity,
         = rotational_kinetic_energy_calculation(rotational_inertia,
                                                 wheel_radius,
                                                 final_velocity)
-    # -1 to reverse sign of this force because the simulation is running backwards in time
-    drag_energy = -1 * distance_of_travel * drag_force_calculation(drag_coefficient,
+    drag_energy = distance_of_travel * drag_force_calculation(drag_coefficient,
                                                                    final_velocity,
                                                                    air_density,
                                                                    frontal_area)
     # -1 to reverse sign of this force because the simulation is running backwards in time
     rolling_resistance_force = \
-        -1 * rolling_resistance_force_calculation(mass, final_velocity, wheel_pressure_bar)
+        rolling_resistance_force_calculation(mass, final_velocity, wheel_pressure_bar)
     rolling_resistance_energy = rolling_resistance_force * time_of_segment
 
     initial_kinetic_energy_term = 0.5 * (rotational_inertia * ((1/wheel_radius) ** 2) +
@@ -315,13 +314,14 @@ def reverse_dececceleration_calculation(final_velocity,
                  .format(acceleration, final_velocity, initial_velocity,
                          time_of_segment, distance_of_travel),
                  extra={'sim_index': 'N/A'})
-    logger.debug("final linear e, {}, init linear e, {}, final rot e, {}, init rot e, {}"
+    logger.debug("final linear e, {}, init linear e, {}, final rot e, {}, init rot e, {}\n"
                  .format(final_linear_kinetic_energy, initial_linear_kinetic_energy,
                          final_rotational_kinetic_energy, initial_rotational_kinetic_energy),
                  extra={'sim_index': 'N/A'})
 
     physics_results = PhysicsCalculationOutput(initial_velocity, final_velocity, distance_of_travel,
                                                time_of_segment, energy_motor, acceleration)
+
     # developer check
     if final_velocity > initial_velocity:
         raise("reverse physics calculation wrong! initial velocity lower than final velocity")
