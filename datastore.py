@@ -22,7 +22,7 @@ class DataResultsUpdate:
         self.acceleration_list_update = []
         self.motor_power_list_update = []
         self.battery_power_list_update = []
-        self.motor_energy_list_update = []
+        self.motor_energy_cumulative_list_update = []
 
 
 class DataStore:
@@ -272,11 +272,13 @@ class DataStore:
         """
         self._lock.lockForWrite()
         try:
-            _time = self._lap_simulation_results.time_list[self._refresh_index:
+            self._lap_simulation_results.regenerate_cumulative_lists(self._refresh_index, self._simulation_index)
+
+            _time = self._lap_simulation_results.time_cumulative_list[self._refresh_index:
                                                            self._simulation_index-1]
             tmp_time = deepcopy(_time)
 
-            _distance = self._lap_simulation_results.distance_list[self._refresh_index:
+            _distance = self._lap_simulation_results.distance_cumulative_list[self._refresh_index:
                                                                    self._simulation_index-1]
             tmp_dst = deepcopy(_distance)
 
@@ -300,7 +302,7 @@ class DataStore:
                 self._refresh_index: self._simulation_index-1]
             tmp_bp = deepcopy(_battery_power)
 
-            _battery_energy = self._lap_simulation_results.battery_energy_list[
+            _battery_energy = self._lap_simulation_results.battery_energy_cumulative_list[
                 self._refresh_index: self._simulation_index-1]
             tmp_be = deepcopy(_battery_energy)
         except IndexError:
@@ -585,6 +587,8 @@ class DataStore:
         self._lock.lockForWrite()
         self._lap_simulation_results.add_physics_results(physics_results, index)
         self._lock.unlock()
+        
+
 
 
 class RacingSimulationResults():
@@ -608,27 +612,18 @@ class LapVelocitySimulationResults():
         self.time_cumulative_list = []
         self.distance_cumulative_list = []
         self.motor_power_list = []
-        self.battery_power_list = []
-        self.battery_energy_list = []
-        self.acceleration_list = []
-        self.velocity_list = []
-        self.physics_results_profile = []
-
-    def initialize_lists(self, length):
-        """Function to initialize the profile lists after after
-        the initialization of the datastore.
-        """
-
-        self.time_cumulative_list = []
-        self.distance_cumulative_list = []
-        self.motor_power_list = []
-        self.motor_energy_list = []
+        self.motor_energy_cumulative_list = []
         self.acceleration_list = []
         self.velocity_list = []
         self.battery_energy_list = []
         self.battery_power_list = []
         self.battery_energy_cumulative_list = []
         self.physics_results_profile = []
+
+    def initialize_lists(self, length):
+        """Function to initialize the profile lists after after
+        the initialization of the datastore.
+        """
 
         physics_result_filler = PhysicsCalculationOutput(1, 1, 1, 1, 1, 1)
 
@@ -638,7 +633,7 @@ class LapVelocitySimulationResults():
             self.distance_cumulative_list.append(0)
             self.motor_power_list.append(0)
             self.battery_power_list.append(0)
-            self.motor_energy_list.append(0)
+            self.motor_energy_cumulative_list.append(0)
             self.acceleration_list.append(0)
             self.velocity_list.append(0)
             self.battery_energy_list.append(0)
@@ -648,7 +643,8 @@ class LapVelocitySimulationResults():
 
     def add_physics_results(self, physics_results, index):
         """Function that inserts physics results at index: index
-        into the result arrays
+        into the result lists. Note that the cumulative lists are
+        only updated in the regenerate_cumulative_lists function below.
 
         Args:
             physics_results (PhysicsResults): physics results to be inserted into results arrays
@@ -656,16 +652,36 @@ class LapVelocitySimulationResults():
 
         """
         self.physics_results_profile[index] = physics_results
-        self.distance_cumulative_list[index] = (self.distance_cumulative_list[index - 1] +
-                                                physics_results.distance_traveled)
-        self.time_cumulative_list[index] = (self.time_cumulative_list[index - 1] +
-                                            physics_results.time_of_segment)
         self.motor_power_list[index] = physics_results.motor_power
-        self.motor_energy_list[index] = (self.motor_energy_list[index - 1] +
-                                         physics_results.energy_differential_of_motor)
         self.acceleration_list[index] = physics_results.acceleration
         self.velocity_list[index] = physics_results.final_velocity
         self.battery_energy_list[index] = physics_results.battery_energy
         self.battery_power_list[index] = physics_results.battery_power
-        self.battery_energy_cumulative_list[index] = (self.battery_energy_cumulative_list[index - 1] +
+    
+    def regenerate_cumulative_lists(self, start_index, end_index):
+        """Function that regenerates the cumulaltive lists of data for display from
+        start_index to end_index. This is necessary because when the simulation
+        runs in reverse results are not populated in index order in the data arrays.
+        
+        Typically start_index will be the simulation "refersh index"
+        Typically end_index will be the simulation "simulation index"
+
+            Args: 
+             - start_index (int): starting index for regenerating the display lists
+             - end_index (int): ending index for regenerating the display lists
+
+            Returns:
+              - Nothing
+
+        """
+
+        for i in range(start_index, end_index):
+            physics_results = self.physics_results_profile[i]
+            self.distance_cumulative_list[i] = (self.distance_cumulative_list[i - 1] +
+                                                physics_results.distance_traveled)
+            self.time_cumulative_list[i] = (self.time_cumulative_list[i - 1] +
+                                            physics_results.time_of_segment)       
+            self.motor_energy_cumulative_list[i] = (self.motor_energy_cumulative_list[i - 1] +
+                                                    physics_results.energy_differential_of_motor)
+            self.battery_energy_cumulative_list[i] = (self.battery_energy_cumulative_list[i - 1] +
                                                       physics_results.battery_energy)

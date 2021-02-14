@@ -237,7 +237,7 @@ class MainWindow(QWidget):
         self.checkboxBatteryEnergy.setChecked(False)
         self.spinboxBatteryEnergy = QDoubleSpinBox()
         self.spinboxBatteryEnergy.setReadOnly(True)
-        self.spinboxBatteryEnergy.setRange(-999999, 999999)
+        self.spinboxBatteryEnergy.setRange(-999999, 999999999)
 
         # self.userDisplayControlsGroup = QtGui.QGroupBox('User Display Controls')
         self.userDisplayControlsGroup = QGroupBox('User Controls')
@@ -325,7 +325,7 @@ class MainWindow(QWidget):
             updated_acceleration = dictResults['acceleration']
             updated_motor_power = dictResults['motor_power']
             updated_battery_power = dictResults['battery_power']
-            # updated_battery_energy = dictResults['battery_energy']
+            updated_battery_energy = dictResults['battery_energy']
             # print('len(_x)={} len(_velocity)={}'.format(len(self._x), len(self._velocity)))
             # print('Adding new {} velocity data points starting at index {}'.format(
             #                                                    len(updated_velocity), new_rfi))
@@ -339,7 +339,7 @@ class MainWindow(QWidget):
             self._acceleration = self._acceleration[0:new_rfi]
             self._motor_power = self._motor_power[0:new_rfi]
             self._battery_power = self._battery_power[0:new_rfi]
-            # self._battery_energy = self._battery_energy[0:new_rfi]
+            self._battery_energy = self._battery_energy[0:new_rfi]
             # print('After resizing _velocity is len={}'.format(len(self._velocity)))
 
             # append on newly retrieved data
@@ -350,7 +350,7 @@ class MainWindow(QWidget):
             self._acceleration = self._acceleration + updated_acceleration
             self._motor_power = self._motor_power + updated_motor_power
             self._battery_power = self._battery_power + updated_battery_power
-            # self._battery_energy = self._battery_energy + updated_battery_energy
+            self._battery_energy = self._battery_energy + updated_battery_energy
             self._X = list(range(0, len(self._velocity)))
             # print('After appending, len(_X) = {} len(_velocity) = {}'
             #        .format(len(self._X), len(self._velocity)))
@@ -362,7 +362,7 @@ class MainWindow(QWidget):
             self.spinboxAcceleration.setValue(self._acceleration[-1])
             self.spinboxMotorPower.setValue(self._motor_power[-1])
             self.spinboxBatteryPower.setValue(self._battery_power[-1])
-            # self.spinboxBatteryEnergy.setValue(self._battery_energy[-1])
+            self.spinboxBatteryEnergy.setValue(self._battery_energy[-1])
 
             # alway plot/show the Time plot because the other plots are "linked" to it
             # so user can scroll around
@@ -401,11 +401,9 @@ class MainWindow(QWidget):
             else:
                 self.p6.hide()
 
-            """TBD - to be added once Battery Energy is working in physics_equations
+
             if self.checkboxBatteryEnergy.isChecked() is True:
-                #self.p7.show()
-                #self.p7.plot(x=x, y=_battery_energy, name="Plot7", title="Battery Energy (joules)")
+                self.p7.show()
                 self.battery_energy_data_line.setData(self._X, self._battery_energy)
             else:
                 self.p7.hide()
-            """
