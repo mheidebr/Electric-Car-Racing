@@ -265,6 +265,7 @@ class MainWindow(QWidget):
         self.userDisplayControlsLayout.addWidget(self.spinboxBatteryPower,          9, 1)
         self.userDisplayControlsLayout.addWidget(self.checkboxBatteryEnergy,        10, 0)
         self.userDisplayControlsLayout.addWidget(self.spinboxBatteryEnergy,         10, 1)
+        self.userDisplayControlsGroup.setFixedWidth(350)
         self.userDisplayControlsGroup.setLayout(self.userDisplayControlsLayout)
 
     def simulationThreadResultsDataDisplay(self):
