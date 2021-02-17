@@ -29,7 +29,7 @@ if __name__ == "__main__":
     data_store = DataStore()
     logger.info("MainWindow: DataStore initialized",
                     extra={'sim_index': data_store.get_simulation_index()})
-    simulation_thread = SimulationThread(data_store, logger)
+    simulation_thread = SimulationThread(data_store, logger, track_data, car_data)
 
     MainApp = QApplication(sys.argv)
     window = MainWindow(data_store, simulation_thread, logger)

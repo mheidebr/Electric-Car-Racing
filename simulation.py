@@ -30,7 +30,7 @@ class SimulationThread(QThread):
     simulationThreadWalkBackCompleteSignal = pyqtSignal(int)  # sim_index where walkback completed
     breakpointDistance = 0
 
-    def __init__(self, passed_data_store, logger, parent=None):
+    def __init__(self, passed_data_store, logger, track_data, car_data, parent=None):
         QThread.__init__(self, parent)
         
         self.logger = logger
@@ -47,7 +47,7 @@ class SimulationThread(QThread):
 
         # Initialize the simulation universe
         self._data_store = passed_data_store
-        self.initialize_race()
+        self.initialize_race(track_data, car_data)
 
         # print('SimulationThread: __init()__')
         # print("SimulationThread: Simulation Index = {}".format(self._data_store.\
@@ -66,35 +66,29 @@ class SimulationThread(QThread):
 
         # rotational inertia estimation: http://www.hpwizard.com/rotational-inertia.html
 
-    def initialize_race(self):
+    def initialize_race(self, track_data, car_data):
 
         segment_distance = 0.005  # meters, this must be very very small
-        battery_power = 40000  # 40kW
-        motor_efficiency = 0.8
         wheel_radius = 0.25  # m, ~20 in OD on tires
-        rotational_inertia = 10  # kg*m^2
-        mass = 1000  # kg
-        drag_coefficient = 0.4
-        frontal_area = 7  # m^2
-        air_density = 1  # kg/m^3
-        wheel_pressure_bar = 3  # bar
 
         track = TrackProperties()
-        track.set_air_density(air_density)
+        track.set_air_density(track_data["air_density"])
+
 
         for distance in high_plains_raceway:
-            track.add_critical_point(distance, high_plains_raceway[distance],
-                                     track.FREE_ACCELERATION)
+            if str(distance) not in "air_density":
+                track.add_critical_point(distance, track_data[distance],
+                                        track.FREE_ACCELERATION)
         # for distance in simple_track:
         #    track.add_critical_point(distance, simple_track[distance], track.FREE_ACCELERATION)
         track.generate_track_list(segment_distance)
 
         car = ElectricCarProperties()
-        car.set_car_parameters(mass=mass, rotational_inertia=rotational_inertia,
-                               motor_power=battery_power, motor_efficiency=motor_efficiency,
-                               battery_capacity=10, drag_coefficient=drag_coefficient,
-                               frontal_area=frontal_area, wheel_radius=wheel_radius,
-                               wheel_pressure_bar=wheel_pressure_bar)
+        car.set_car_parameters(mass=car_data["vehKg"], rotational_inertia=car_data["wheelInertiaKgM2"],
+                               motor_power=(car_data["maxMotorKw"] * 1000), motor_efficiency=car_data["motorPeakEff"],
+                               battery_capacity=10, drag_coefficient=car_data["dragCoef"],
+                               frontal_area=car_data["frontalAreaM2"], wheel_radius=wheel_radius,
+                               wheel_pressure_bar=car_data["wheelRrCoef"])
 
         self._data_store.initialize_lap_lists(len(track.distance_list))
         self._data_store.set_car_properties(car)
