@@ -25,7 +25,7 @@ from track_properties import (TrackProperties)
 
 class SimulationThread(QThread):
     # Define the Signals we'll be emitting to the MainWindow
-    simulationThreadSignal = pyqtSignal(str)
+    simulationThreadStatusUpdateSignal = pyqtSignal(str)
     simulationThreadWalkBackCompleteSignal = pyqtSignal(int)  # sim_index where walkback completed
     breakpointDistance = 0
 
@@ -121,7 +121,7 @@ class SimulationThread(QThread):
             # set the breakpoint to be a very large number to indicate run to completion
             self.breakpointDistance = 9999999
             # (re)start computing and acknowledge to MainWindow by sending a signal back
-            self.simulationThreadSignal.emit("Calculating...")
+            self.simulationThreadStatusUpdateSignal.emit("Calculating...")
             # "state" variable indicating thread should be calculating
             self.simulationComputing = True
         else:
@@ -133,7 +133,7 @@ class SimulationThread(QThread):
                 # requested breakpoint is further down the track
                 self.breakpointDistance = distance_value
                 # Start computing and acknowledge to MainWindow by sending a signal back
-                self.simulationThreadSignal.emit("Calculating...")
+                self.simulationThreadStatusUpdateSignal.emit("Calculating...")
                 # "state" variable indicating thread should be calculating
                 self.simulationComputing = True
             else:
@@ -147,7 +147,7 @@ class SimulationThread(QThread):
         self.logger.info('Slot:thread_stop_calculating :',
                     extra={'sim_index': self._data_store.get_simulation_index()})
         # Now send a signal back to the main window
-        self.simulationThreadSignal.emit("Paused")
+        self.simulationThreadStatusUpdateSignal.emit("Paused")
 
         # "state" variable indicating thread should stop calculating
         self.simulationComputing = False
@@ -240,7 +240,7 @@ class SimulationThread(QThread):
                 if self.simulationComputing is True:
                     # if we're computing and got here, must have hit a breakpoint, therefore pause
                     # Now send a signal back to the main window
-                    self.simulationThreadSignal.emit("Paused")
+                    self.simulationThreadStatusUpdateSignal.emit("Paused")
 
                     # "state" variable indicating thread should stop calculating
                     self.simulationComputing = False
@@ -256,7 +256,7 @@ class SimulationThread(QThread):
         # end of while data_store.get_simulation_index() < list_len:
 
         self.logger.info("SIMULATION COMPLETE!", extra={'sim_index': 'N/A'})
-        self.simulationThreadSignal.emit("Finished!")
+        self.simulationThreadStatusUpdateSignal.emit("Complete!")
         self._data_store.exit_event.set()
 
     def walk_back(self, velocity_from_constraint, passed_track, passed_car):

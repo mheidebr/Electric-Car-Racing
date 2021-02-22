@@ -29,6 +29,7 @@
 import sys
 import time
 import logging
+import csv
 from project_argparser import *
 from PyQt5.QtCore import (QTimer, pyqtSignal, pyqtSlot)
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QLabel, QLineEdit, QCheckBox, QPushButton)
@@ -123,7 +124,7 @@ class MainWindow(QWidget):
                                                      name="Plot7", title="Battery Energy")
 
         # Setup the SIGNALs to be received from the worker threads
-        self.simulationThread.simulationThreadSignal.connect(self.signalRcvFromSimulationThread)
+        self.simulationThread.simulationThreadStatusUpdateSignal.connect(self.signalRcvFromSimulationThread)
 
         # internal timer for refreshing the plots
         self.plotRefreshTimer = QTimer()
@@ -160,7 +161,7 @@ class MainWindow(QWidget):
 
         "distance" value sent to the SimulationThread is overload with these meanings:
           >0 distance in meters from the start on the track...
-          =0 singlestep,
+          =0 singlestep (TBD),
           <0 whole track,
         """
         if self.checkboxDistanceBreakpoint.isChecked() is True:
@@ -170,7 +171,7 @@ class MainWindow(QWidget):
             # until user hits "pause" button
             distance = -1
 
-        # signal the thread
+        # signal the thread, telling it the distance to calculate
         self.simulationThread.thread_start_calculating(distance)
 
     def createUserDisplayControls(self):
@@ -291,8 +292,32 @@ class MainWindow(QWidget):
     """
     @pyqtSlot(str)
     def signalRcvFromSimulationThread(self, text):
+        """
+        We received the simulation thread signal with a update of it's computing status.
+        If the signal indicates the simulation is complete, dump the results to a .csv file
+        Inputs:
+            text - a string value that is written into the user GUI status textbox.
+     
+        Outputs:
+            if "text" is "Complete" output a csv file of results found in the DataStore
+        Assumption if "Complete" the simulation is no longer writing values to DataStore
+        """
         self.textboxStatus.setText(text)
-
+        if text == 'Complete!':
+            with open('results.csv', 'w', newline='') as csvfile:
+                spamwriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
+                spamwriter.writerow(['SimulationIndex', 'Time', 'Distance', 'Velocity',
+                                     'Max Velocity', 'Acceleration', 'Motor Power',
+                                     'Battery Power', 'Battery Energy'])
+                #i = self.data_store.get_simulation_index()
+                x = 0
+                for i in self._time:
+                    spamwriter.writerow([x, self._time[x], self._distance[x], self._velocity[x],
+                                        self._max_velocity[x], self._acceleration[x],
+                                        self._motor_power[x], self._battery_power[x],
+                                        self._battery_energy[x]])
+                    x = x+1
+                    
     @pyqtSlot()
     def signalPlotRefresh(self):
         # Update the GUI window to display computation status, data, and plots selected by the user
