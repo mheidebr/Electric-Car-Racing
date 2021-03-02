@@ -18,8 +18,7 @@ from physics_equations import (max_negative_power_physics_simulation,
                                reverse_max_negative_power_physics_simulation
                                )
 from electric_car_properties import ElectricCarProperties
-from track_properties import (TrackProperties,
-                              high_plains_raceway)
+from track_properties import (TrackProperties)
 # from track_properties import (TrackProperties,
 #                              simple_track)
 
@@ -74,8 +73,7 @@ class SimulationThread(QThread):
         track = TrackProperties()
         track.set_air_density(track_data["air_density"])
 
-
-        for distance in high_plains_raceway:
+        for distance in track_data:
             if str(distance) not in "air_density":
                 track.add_critical_point(distance, track_data[distance],
                                         track.FREE_ACCELERATION)
