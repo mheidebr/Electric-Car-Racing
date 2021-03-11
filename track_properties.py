@@ -121,19 +121,4 @@ class TrackProperties:
         logger.info("list length: {}".format(len(self.max_velocity_list)), extra={'sim_index': 'N/A'})
         logger.info("last distance: {}".format(self.distance_list[-1]), extra={'sim_index': 'N/A'})
 
-
-# included high plains race track is measured in meters and meters per second
-# assuming 0.8g turn 
-# https://www.highplainsraceway.com/wp-content/uploads/hpr-track-large.jpg
-
-simple_track = {0: 10,
-                5.0: 5.0,
-                10.0: 10.0,
-                12.0: 12.0,
-                15.0: 15.0,
-                50.0: 30.0,
-                100.0: 30.0,
-                200.0: 30.0}
-                #1000.0: 40.0}
-                
                         
