@@ -121,45 +121,4 @@ class TrackProperties:
         logger.info("list length: {}".format(len(self.max_velocity_list)), extra={'sim_index': 'N/A'})
         logger.info("last distance: {}".format(self.distance_list[-1]), extra={'sim_index': 'N/A'})
 
-
-# this is in meters and meters per second
-# assuming 0.8g turn 
-# https://www.highplainsraceway.com/wp-content/uploads/hpr-track-large.jpg
-high_plains_raceway = {0: 50,
-                       182.88: 18.299,  # turn 1 
-                       243.84: 50,
-                       365.76: 18.94,  # turn 2
-                       472.44: 50,
-                       594.36: 14.67,  # probably two low, turn 3
-                       640.08: 50,
-                       1493.52: 20.17, # turn 4
-                       1554.48: 50,
-                       1645.92: 18.62,  # turn 5
-                       1722.12: 50,
-                       1920.24: 18.94,  # turn 6 big part
-                       1981.2: 13.39,  # turn 6 small part
-                       1706.88: 50,
-                       2286: 28.93,  # turn 7
-                       2438.4: 50,
-                       2606.04: 13.83,  # turn 8
-                       2667: 50,
-                       3002.28: 18.94,  # turn 10 (skip 9a and 9b)
-                       3048: 50,
-                       3215.64: 19.56,  # turn 11
-                       3352.8: 50,
-                       3688.08: 14.25,  # turn 13, skip 12
-                       3749.04: 16.58,  # turn 14
-                       3810: 19.86,  # turn 15
-                       3855.72: 50,
-                       4099.56: 50}
-simple_track = {0: 10,
-                5.0: 5.0,
-                10.0: 10.0,
-                12.0: 12.0,
-                15.0: 15.0,
-                50.0: 30.0,
-                100.0: 30.0,
-                200.0: 30.0}
-                #1000.0: 40.0}
-                
                         
