@@ -62,18 +62,32 @@ class MainWindow(QWidget):
         # data into.
         self.graphs = pg.GraphicsLayoutWidget(show=True, title="Race Sim plots")
         self.graphs.resize(1000, 540)
-        self.p1 = self.graphs.addPlot(name="Plot1", title="Time (s)")
-        self.p2 = self.graphs.addPlot(name="Plot2", title="Distance (m)")
+        self.p1 = self.graphs.addPlot(name="Plot1", row=1, col=2,
+                                      labels={'bottom': 'Sim Index',
+                                              'left': 'Time (sec)'})
+        self.p2 = self.graphs.addPlot(name="Plot2", row=2, col=2,
+                                      labels={'bottom': 'Sim Index',
+                                              'left': "Distance (m)"})
         self.p2.hide()
-        self.p3 = self.graphs.addPlot(name="Plot3", title="Velocity (m/s)")
+        self.p3 = self.graphs.addPlot(name="Plot3", row=3, col=2,
+                                      labels={'bottom': 'Sim Index',
+                                              'left': "Velocity (m/s)"})
         self.p3.hide()
-        self.p4 = self.graphs.addPlot(name="Plot4", title="Acceleration (m/s^2)")
+        self.p4 = self.graphs.addPlot(name="Plot4", row=4, col=2,
+                                      labels={'bottom': 'Sim Index',
+                                              'left': "Acceleration (m/s^2)"})
         self.p4.hide()
-        self.p5 = self.graphs.addPlot(name="Plot5", title="Motor Power")
+        self.p5 = self.graphs.addPlot(name="Plot5", row=5, col=2,
+                                      labels={'bottom': 'Sim Index',
+                                              'left': "Motor Power (W)"})
         self.p5.hide()
-        self.p6 = self.graphs.addPlot(name="Plot6", title="Battery Power")
+        self.p6 = self.graphs.addPlot(name="Plot6", row=6, col=2,
+                                      labels={'bottom': 'Sim Index',
+                                              'left': "Battery Power (W)"})
         self.p6.hide()
-        self.p7 = self.graphs.addPlot(name="Plot7", title="Battery Energy (joules)")
+        self.p7 = self.graphs.addPlot(name="Plot7", row=7, col=2,
+                                      labels={'bottom': 'Sim Index',
+                                              'left': "Battery Energy (j)"})
         self.p7.hide()
 
         # Links user X-coordinate movements of all plots together. Practically, there has
@@ -221,13 +235,13 @@ class MainWindow(QWidget):
         self.spinboxAcceleration.setReadOnly(True)
         self.spinboxAcceleration.setRange(-999999, 999999)
 
-        self.checkboxMotorPower = QCheckBox('Motor Power', self)
+        self.checkboxMotorPower = QCheckBox('Motor Power (W)', self)
         self.checkboxMotorPower.setChecked(False)
         self.spinboxMotorPower = QDoubleSpinBox()
         self.spinboxMotorPower.setReadOnly(True)
         self.spinboxMotorPower.setRange(-999999, 999999)
 
-        self.checkboxBatteryPower = QCheckBox('Battery Power', self)
+        self.checkboxBatteryPower = QCheckBox('Battery Power (W)', self)
         self.checkboxBatteryPower.setChecked(False)
         self.spinboxBatteryPower = QDoubleSpinBox()
         self.spinboxBatteryPower.setReadOnly(True)
@@ -324,6 +338,21 @@ class MainWindow(QWidget):
             updated_velocity = dictResults['velocity']
             updated_max_velocity = dictResults['max_velocity']
             updated_acceleration = dictResults['acceleration']
+
+            """
+            # convert watts to kW to make better graph units
+            updated_motor_power_watts = dictResults['motor_power']
+            updated_motor_power = []
+            for x in updated_motor_power_watts:
+                updated_motor_power.append(x/1000.0)
+
+            # convert watts to kW to make better graph units
+            updated_battery_power_watts = dictResults['battery_power']
+            updated_battery_power = []
+            for x in updated_battery_power_watts:
+                updated_battery_power.append(x/1000.0)
+
+            """
             updated_motor_power = dictResults['motor_power']
             updated_battery_power = dictResults['battery_power']
             updated_battery_energy = dictResults['battery_energy']
@@ -353,8 +382,6 @@ class MainWindow(QWidget):
             self._battery_power = self._battery_power + updated_battery_power
             self._battery_energy = self._battery_energy + updated_battery_energy
             self._X = list(range(0, len(self._velocity)))
-            # print('After appending, len(_X) = {} len(_velocity) = {}'
-            #        .format(len(self._X), len(self._velocity)))
 
             # update GUI with the last (current) data
             self.spinboxTime.setValue(self._time[-1])
