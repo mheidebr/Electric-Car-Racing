@@ -46,12 +46,13 @@ class MainWindow(QWidget):
     # define the SIGNALs that MainWindow will send to other threads
     mainWindowStartCalculatingSignal = pyqtSignal(int)
 
-    def __init__(self, data_store, simulationThread, logger, *args, **kwargs):
+    def __init__(self, data_store, simulationThread, logger, output_filename, *args, **kwargs):
         QWidget.__init__(self, parent=None)
 
         self.data_store = data_store
         self.simulationThread = simulationThread
         self.logger = logger
+        self.output_filename = output_filename
 
         # Create GUI related resources
         self.setWindowTitle('Race Simulation')
@@ -304,7 +305,7 @@ class MainWindow(QWidget):
         """
         self.textboxStatus.setText(text)
         if text == 'Complete!':
-            with open('results.csv', 'w', newline='') as csvfile:
+            with open(self.output_filename, 'w', newline='') as csvfile:
                 spamwriter = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
                 spamwriter.writerow(['SimulationIndex', 'Time', 'Distance', 'Velocity',
                                      'Max Velocity', 'Acceleration', 'Motor Power',
