@@ -16,13 +16,15 @@ from logging_config import configure_logging
 from PyQt5.QtWidgets import (QApplication, QGridLayout, QGroupBox, QDoubleSpinBox)
 
 if __name__ == "__main__":
-    
+
     logger = logging.getLogger(__name__)
 
     args = call_args()
     if args["logging_arg"].arg_check(args["parsed_args"].logging):
         configure_logging()
-    
+
+    output_filename = args["parsed_args"].output
+
     car_data = args["car_arg"].open_car_dict(args["parsed_args"].car)
     track_data = args["track_arg"].open_track_dict(args["parsed_args"].track)
 
@@ -32,6 +34,6 @@ if __name__ == "__main__":
     simulation_thread = SimulationThread(data_store, logger, track_data, car_data)
 
     MainApp = QApplication(sys.argv)
-    window = MainWindow(data_store, simulation_thread, logger)
+    window = MainWindow(data_store, simulation_thread, logger, output_filename)
     window.show()
     sys.exit(cProfile.runctx("MainApp.exec_()", globals(), locals(), 'profile-display.out'))
