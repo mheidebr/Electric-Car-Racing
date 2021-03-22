@@ -37,7 +37,6 @@ class ResultsWindow(QWidget):
         self.p1 = self.graphs.addPlot(name="Plot1", row=1, col=2,
                                       labels={'bottom': 'time (sec)',
                                               'left': 'Distance (m)'})
-        self.p1.addLegend()
         # self.p1.hide()
         self.p2 = self.graphs.addPlot(name="Plot2", row=2, col=2,
                                       labels={'bottom': 'time (sec)',
@@ -73,7 +72,7 @@ class ResultsWindow(QWidget):
         self.layout.addWidget(self.userDisplayControlsGroup)
         self.layout.addWidget(self.graphs)
         self.setLayout(self.layout)
-        
+
         self._time = [0]
 
         self.checkboxShowPlotData1.clicked.connect(lambda: self.enablePlotData(1))
@@ -267,9 +266,21 @@ class ResultsWindow(QWidget):
             self.checkboxShowPlotData1.setEnabled(True)
             self.checkboxShowPlotData1.setChecked(True)
 
+            # Remove previous data if it has already been read in, variables created and plotted.
+            # The distance_data_line variable's existence (as proven by "hasattr" test) is a proxy
+            # for all the variables, and means they all need to be scrubbed from the plot
+            if hasattr(self, 'distance_data_line'):
+                self.p1.removeItem(self.distance_data_line)
+                self.p2.removeItem(self.velocity_data_line)
+                self.p2.removeItem(self.max_velocity_data_line)
+                self.p3.removeItem(self.acceleration_data_line)
+                self.p4.removeItem(self.motor_power_data_line)
+                self.p5.removeItem(self.battery_power_data_line)
+                self.p6.removeItem(self.battery_energy_data_line)
+
             # Read in the new data file for plot #1
             self.data_frame = pd.read_csv(name+ext, delimiter=',')
-            
+
             # use the dictionary property to select out and assign to our private variables
             # the file's data values
             self._sim_index = self.data_frame['SimulationIndex']
@@ -297,8 +308,9 @@ class ResultsWindow(QWidget):
                                                            pen='w')
             self.battery_energy_data_line = pg.PlotDataItem(self._time, self._battery_energy,
                                                             pen='w')
-            # add the lines to the respective plot widget. 
+            # add the lines to the respective plot widget.
             # The plot widget (e.g. p1, p2,...) show() methods determines if the graph is showing
+            # self.legend = self.p1.addLegend()
             self.p1.addItem(self.distance_data_line)
             self.p2.addItem(self.velocity_data_line)
             self.p2.addItem(self.max_velocity_data_line)
@@ -311,6 +323,18 @@ class ResultsWindow(QWidget):
             self.textboxPlotDataFilename2.setText(name+ext)
             self.checkboxShowPlotData2.setEnabled(True)
             self.checkboxShowPlotData2.setChecked(True)
+
+            # Remove previous data if it has already been read, variables created and plotted.
+            # The distance_data_line variable's existence (as proven by "hasattr" test) is a proxy
+            # for all the variables, and means they all need to be scrubbed from the plot
+            if hasattr(self, 'distance_data_line2'):
+                self.p1.removeItem(self.distance_data_line2)
+                self.p2.removeItem(self.velocity_data_line2)
+                self.p2.removeItem(self.max_velocity_data_line2)
+                self.p3.removeItem(self.acceleration_data_line2)
+                self.p4.removeItem(self.motor_power_data_line2)
+                self.p5.removeItem(self.battery_power_data_line2)
+                self.p6.removeItem(self.battery_energy_data_line2)
 
             # Read in the new data file for plot #2
             self.data_frame2 = pd.read_csv(name+ext, delimiter=',')
@@ -348,10 +372,10 @@ class ResultsWindow(QWidget):
             self.p4.addItem(self.motor_power_data_line2)
             self.p5.addItem(self.battery_power_data_line2)
             self.p6.addItem(self.battery_energy_data_line2)
-                                            
+
         # show the appropriate plots if GUI has them turned on
         self.enablePlotData(plot_number)
-    
+
     def enablePlotData(self, plot_number):
         # Assumption:
         # 1) the data file for the parameter "plot_number" has already been opened and
@@ -359,7 +383,7 @@ class ResultsWindow(QWidget):
         # 2) it is assumed that checkboxShowPlotX.setChecked has already been called
         if plot_number == 1:
             # see if we're supposed show plot 1 data items. If so load them up
-            # Note: the .show() 
+            # Note: the .show()
             if self.checkboxShowPlotData1.isChecked() is True:
                 self.p1.addItem(self.distance_data_line)
                 self.p2.addItem(self.velocity_data_line)
