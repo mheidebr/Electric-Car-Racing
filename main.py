@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     car_data = args["car_arg"].open_car_dict(args["parsed_args"].car)
     track_data = args["track_arg"].open_track_dict(args["parsed_args"].track)
-
+    
     data_store = DataStore()
     logger.info("MainWindow: DataStore initialized",
                     extra={'sim_index': data_store.get_simulation_index()})

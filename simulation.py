@@ -71,12 +71,15 @@ class SimulationThread(QThread):
         wheel_radius = 0.25  # m, ~20 in OD on tires
 
         track = TrackProperties()
-        track.set_air_density(track_data["air_density"])
+        track.set_air_density(track_data[0][8])
 
-        for distance in track_data:
-            if str(distance) not in "air_density":
-                track.add_critical_point(distance, track_data[distance],
-                                        track.FREE_ACCELERATION)
+        for i in range(len(track_data)):
+            track.add_critical_point(track_data[i][0], track_data[i][5], track.FREE_ACCELERATION)
+
+        # for distance in track_data:
+        #     if str(distance) not in "air_density":
+        #         track.add_critical_point(distance, track_data[distance],
+        #                                 track.FREE_ACCELERATION)
         # for distance in simple_track:
         #    track.add_critical_point(distance, simple_track[distance], track.FREE_ACCELERATION)
         track.generate_track_list(segment_distance)

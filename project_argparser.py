@@ -23,8 +23,9 @@ class SingleArg:
     
     #opens csv and creates dict with keys corresponding to the headers of the fastsim car csv file format
     def open_car_dict(self, input):
-        if input == None:
-            input = self.off_msg
+
+        input = "cars/" + input
+
         if not os.path.exists(input):
             raise argparse.ArgumentTypeError('The file %s is not in the working directory' % input)
         else:
@@ -100,21 +101,26 @@ class SingleArg:
         
         return car_dict
     
-    #opens csv file and returns a dict with keys "air_density" and integers representing breakpoints
+    # Opens a csv file and returns a matrix with rows (first index) corresponding to the headers 
+    # of the TUM track csv format. Left to right corresponds to 0 to 8.
     def open_track_dict(self, input):
-        if input == None:
-            input = self.off_msg
+
+        input = "tracks/" + input
+
         if not os.path.exists(input):
             raise argparse.ArgumentTypeError('The file %s is not in the working directory' % input)
         else:
             with open(input, newline='') as csv_file:
-                csv_data = list(csv.reader(csv_file))[1]
-        track_dict = dict()
-        track_dict["air_density"] = eval_type(csv_data[0])
-        csv_data.pop(0)
-        for i in range(int(len(csv_data)/2)):
-            track_dict[eval_type(csv_data[2*i])] = eval_type(csv_data[(2*i)+1])
-        return track_dict
+                track_list = list(csv.reader(csv_file, skipinitialspace=True, delimiter=';'))
+
+        for i in range(len(track_list)):
+            for j in range(len(track_list[i])):
+                track_list[i][j] = eval_type(track_list[i][j])
+
+        for i in range(3):
+            track_list.pop(0)
+
+        return track_list
 
 
 #call_args() now instantiates each SingleArg object and adds them to a dictionary, as well as the data structure filled with parsed args
@@ -123,9 +129,9 @@ def call_args():
 
     arg_dict = dict()
     arg_dict["logging_arg"] = SingleArg(parser, '-l', '--logging', 'Turn logging on or off — enter either "on" or "off". This defaults to off with no argument.', 'on', 'off')
-    arg_dict["car_arg"] = SingleArg(parser, '-c', '--car', 'Load a custom car configuration — defaults to included file default_car.csv.', 'void', 'fastsim_car_test.csv')
-    arg_dict["track_arg"] = SingleArg(parser, '-t', '--track', 'Load a custom track configuration — defaults to included file track.csv.', 'void', 'high_plains_track.csv')
-    arg_dict["output_arg"] = SingleArg(parser, '-o', '--output', 'Specify a name for an output file — defaults to "output.csv" by default.', 'void', 'output.csv')
+    arg_dict["car_arg"] = SingleArg(parser, '-c', '--car', 'Load a custom car configuration — defaults to included file default_car.csv.', 'void', '2016_Tesla_Model_S60.csv')
+    arg_dict["track_arg"] = SingleArg(parser, '-t', '--track', 'Load a custom track configuration — defaults to included file track.csv.', 'void', 'HPR_raceline_elevation_example.csv')
+    arg_dict["output_arg"] = SingleArg(parser, '-o', '--output', 'Specify a name for an output file — defaults to "output.csv".', 'void', 'output.csv')
     arg_dict["parsed_args"] = parser.parse_args()
 
     return arg_dict
@@ -142,6 +148,7 @@ def eval_type(input):
 if __name__ == "__main__":
     args = call_args()
     car_data = args["car_arg"].open_car_dict(args["parsed_args"].car)
+    
 
     print(car_data)
 

@@ -215,3 +215,32 @@ Description of car variables and correlation to FASTsim's variables
 | valMsrp | - | MSRP of vehicle (USD) |
 | minFcTimeOn | - | minimum time for the fuel converter to be on |
 | idleFcKw | - | idle power of fuel converter (unclear if this is used by fc or output by fc) |
+
+# Track Variables
+
+This simulation uses track data loaded from a designated, or default, csv file 
+in the directory /tracks. 
+
+The format of the csv file follows that of the Technical University of Munch's 
+Institute for Automotive Technology's autonomous electric car racing simulation
+(https://github.com/TUMFTM/global_racetrajectory_optimization). There are two 
+added variables, though, for elevation and air density. 
+
+The race trajectories in these files is created using TUM's simulation, with 
+elevation added in afterward.
+
+## Track Variable Definitions
+
+| s_m | - | meters | Curvi-linear distance along the raceline.* |
+| x_m | - | meters | X-coordinate of raceline point.* |
+| y_m | - | meters | Y-coordinate of raceline point.* |
+| psi_rad | - | radians | Heading of raceline in current point from -pi to pi radians. Zero is north (along y-axis).* |
+| kappa_radpm | - | radians/meter | Curvature of the raceline at current point.* |
+| vx_mps | - | meters/second | Target velocity at current point.* |
+| ax_mps2 | - | meters/second^2 | Target acceleration at current point. Assumed to be constant.* |
+| elev_m | - | meters | Elevation of the track at the corresponding s_m point. |
+| air_dens | - | kilograms/meter^3 | Air density along the track. |
+| *Info taken from the TUM simulation readme (https://github.com/TUMFTM/global_racetrajectory_optimization). |
+
+
+
