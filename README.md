@@ -231,15 +231,17 @@ elevation added in afterward.
 
 ## Track Variable Definitions
 
-| s_m | - | meters | Curvi-linear distance along the raceline.* |
-| x_m | - | meters | X-coordinate of raceline point.* |
-| y_m | - | meters | Y-coordinate of raceline point.* |
-| psi_rad | - | radians | Heading of raceline in current point from -pi to pi radians. Zero is north (along y-axis).* |
-| kappa_radpm | - | radians/meter | Curvature of the raceline at current point.* |
-| vx_mps | - | meters/second | Target velocity at current point.* |
-| ax_mps2 | - | meters/second^2 | Target acceleration at current point. Assumed to be constant.* |
-| elev_m | - | meters | Elevation of the track at the corresponding s_m point. |
-| air_dens | - | kilograms/meter^3 | Air density along the track. |
+| Header | Unit | Description |
+| ------ | ------ | ------ |
+| s_m | meters | Curvi-linear distance along the raceline.* |
+| x_m | meters | X-coordinate of raceline point.* |
+| y_m | meters | Y-coordinate of raceline point.* |
+| psi_rad | radians | Heading of raceline in current point from -pi to pi radians. Zero is north (along y-axis).* |
+| kappa_radpm | radians/meter | Curvature of the raceline at current point.* |
+| vx_mps | meters/second | Target velocity at current point.* |
+| ax_mps2 | meters/second^2 | Target acceleration at current point. Assumed to be constant.* |
+| elev_m | meters | Elevation of the track at the corresponding s_m point. |
+| air_dens | kilograms/meter^3 | Air density along the track. |
 | *Info taken from the TUM simulation readme (https://github.com/TUMFTM/global_racetrajectory_optimization). |
 
 
