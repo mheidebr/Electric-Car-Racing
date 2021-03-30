@@ -36,4 +36,4 @@ if __name__ == "__main__":
     MainApp = QApplication(sys.argv)
     window = MainWindow(data_store, simulation_thread, logger, output_filename)
     window.show()
-    sys.exit(cProfile.runctx("MainApp.exec_()", globals(), locals(), 'profile-display.out'))
+    sys.exit(cProfile.runctx("MainApp.exec_()", globals(), locals(), './results/cProfile-results/profile-display.out'))

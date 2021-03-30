@@ -6,7 +6,7 @@ energy it takes to race an electric car around tracks
 # Usage
 
 To use this simulation you must have python (3.X) installed on your machine
-Once installed simply navigate to the top level of this repo and run `python3 simulation.py`
+Once installed simply navigate to the top level of this repo and run `python3 main.py`
 A UI should appear and results should be plotted, there will also be command line printout
 for debugging purposes.
 
@@ -16,6 +16,21 @@ FASTsim to validate results.
 
 NREL FASTsim: [link](https://www.nrel.gov/transportation/fastsim.html)
 FASTsim validation: [link](https://www.nrel.gov/docs/fy18osti/71168.pdf)
+
+## Default Usage
+The default car used in the simulation is `./cars/fastsim_car_test.csv`
+The default track used in the simulation is `./tracks/high_plains_track.csv`
+
+
+# Repository Layout
+
+This repository uses the following file structure:
+
+* Results are in the `./results/` folder
+* Logging output is in the `./results/logging_output/` folder (if enabled)
+* cProfile results are output to the `./results/cProfile-results` folder (enabled by default)
+* Car property files should be stored in the `./cars/` folder
+* Track property files should be stored in the `./tracks/` folder
 
 # Present Status?
 
@@ -62,7 +77,9 @@ And it works!
 
 # Vieweing cProfile simulation results
 
-As of 12/15 the simulation will output a file named `profile.out` using the cProfile module.
+As of 12/15 the simulation will output a file named `./results/cprofile-results/profile-simulation.out`
+and `./results/cprofile-results/profile-visualization.out` using the cProfile module. There is a profile
+for each high use thread in the simulation.
 These results can be viewed using `runsnake`
 The things that I did to get `cProfile` and `runsnake` to work for me are documented here: https://kupczynski.info/2015/01/16/profiling-python-scripts.html
 
@@ -87,9 +104,11 @@ $ runsnake profile.out
 
 # Car Variables
 
+NEEDS UPDATE
 This simulation uses variables names that are named the same as FASTsim's variables for
 car related variables.
 Reference: [link](https://www.nrel.gov/transportation/fastsim.html)
+We also might use the TUM simulation for variable names...
 
 ## Car Variables
 
