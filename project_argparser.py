@@ -122,10 +122,23 @@ def call_args():
     parser = argparse.ArgumentParser(description="Electric car racing simulation")
 
     arg_dict = dict()
-    arg_dict["logging_arg"] = SingleArg(parser, '-l', '--logging', 'Turn logging on or off — enter either "on" or "off". This defaults to off with no argument.', 'on', 'off')
-    arg_dict["car_arg"] = SingleArg(parser, '-c', '--car', 'Load a custom car configuration — defaults to included file default_car.csv.', 'void', 'fastsim_car_test.csv')
-    arg_dict["track_arg"] = SingleArg(parser, '-t', '--track', 'Load a custom track configuration — defaults to included file track.csv.', 'void', 'high_plains_track.csv')
-    arg_dict["output_arg"] = SingleArg(parser, '-o', '--output', 'Specify a name for an output file — defaults to "output.csv" by default.', 'void', 'output.csv')
+    arg_dict["logging_arg"] = \
+        SingleArg(parser=parser, key='-l', lng_key='--logging',
+                  help_msg='''Turn logging on or off — enter either "on" or "off". 
+                           This defaults to off with no argument. Logging directory is "./results/logging_output/"''',
+                  on_msg='on', off_msg='off')
+    arg_dict["car_arg"] = \
+        SingleArg(parser=parser, key='-c', lng_key='--car',
+                  help_msg='Load a custom car configuration — defaults to included file "./cars/fastsim_car_test.csv."',
+                  on_msg='void', off_msg='./cars/fastsim_car_test.csv')
+    arg_dict["track_arg"] = \
+        SingleArg(parser=parser, key='-t', lng_key='--track',
+                 help_msg='Load a custom track configuration — defaults to included file "./tracks/hich_plains_track.csv."', 
+                 on_msg='void', off_msg='./tracks/high_plains_track.csv')
+    arg_dict["output_arg"] = \
+        SingleArg(parser=parser, key='-o', lng_key='--output',
+                  help_msg='Specify a name for an output file — defaults to "./results/output.csv" by default.',
+                  on_msg='void', off_msg='./results/output.csv')
     arg_dict["parsed_args"] = parser.parse_args()
 
     return arg_dict

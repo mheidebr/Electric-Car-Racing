@@ -388,4 +388,4 @@ class SimulationThread(QThread):
         # I have only been able to get the runsnake files to work on linux
         # alternative profile results viewer for windows (untried):
         # https://sourceforge.net/projects/qcachegrindwin/
-        cProfile.runctx("self.racing_simulation()", globals(), locals(), 'profile-simulation.out')
+        cProfile.runctx("self.racing_simulation()", globals(), locals(), './results/cProfile-results/profile-simulation.out')

@@ -23,7 +23,7 @@ def configure_logging():
 
     logger.addHandler(consoleHandler)
 
-    fileHandler = logging.FileHandler('example.log')
+    fileHandler = logging.FileHandler('./results/logging_output/example.log')
     fileHandler.setFormatter(formatter)
     fileHandler.setLevel(logging.INFO)
 
