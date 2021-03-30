@@ -8,7 +8,7 @@ import sys
 import time
 import logging
 import cProfile
-from project_argparser import (SingleArg, call_args)
+from project_argparser import (SingleArg, call_args, call_ini)
 from visualization import MainWindow
 from simulation import SimulationThread
 from datastore import DataStore
@@ -20,6 +20,8 @@ if __name__ == "__main__":
     logger = logging.getLogger(__name__)
 
     args = call_args()
+    init_vals = call_ini()
+
     if args["logging_arg"].arg_check(args["parsed_args"].logging):
         configure_logging()
 
@@ -31,7 +33,7 @@ if __name__ == "__main__":
     data_store = DataStore()
     logger.info("MainWindow: DataStore initialized",
                     extra={'sim_index': data_store.get_simulation_index()})
-    simulation_thread = SimulationThread(data_store, logger, track_data, car_data)
+    simulation_thread = SimulationThread(data_store, logger, track_data, car_data, init_vals)
 
     MainApp = QApplication(sys.argv)
     window = MainWindow(data_store, simulation_thread, logger, output_filename)

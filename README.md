@@ -234,3 +234,49 @@ Description of car variables and correlation to FASTsim's variables
 | valMsrp | - | MSRP of vehicle (USD) |
 | minFcTimeOn | - | minimum time for the fuel converter to be on |
 | idleFcKw | - | idle power of fuel converter (unclear if this is used by fc or output by fc) |
+
+# Track Variables
+
+This simulation uses track data loaded from a designated, or default, csv file 
+in the directory /tracks. 
+
+The format of the csv file follows that of the Technical University of Munich 
+Institute for Automotive Technology's autonomous electric car racing simulation
+(https://github.com/TUMFTM/global_racetrajectory_optimization). There are two 
+added variables, however, for elevation and air density. 
+
+The race trajectories in these files are created using TUM's simulation, with 
+elevation added after the fact.
+
+## Track Variable Definitions
+
+| Header | Unit | Description |
+| ------ | ------ | ------ |
+| s_m | meters | Curvi-linear distance along the raceline.* |
+| x_m | meters | X-coordinate of raceline point.* |
+| y_m | meters | Y-coordinate of raceline point.* |
+| psi_rad | radians | Heading of raceline in current point from -pi to pi radians. Zero is north (along y-axis).* |
+| kappa_radpm | radians/meter | Curvature of the raceline at current point.* |
+| vx_mps | meters/second | Target velocity at current point.* |
+| ax_mps2 | meters/second^2 | Target acceleration at current point. Assumed to be constant.* |
+| elev_m | meters | Elevation of the track at the corresponding s_m point. |
+| *Info taken from the TUM simulation readme (https://github.com/TUMFTM/global_racetrajectory_optimization). |
+
+# Initialization file (race_init.ini)
+
+This file provides initial conditions for the simulation. These values do not change throughout its course. 
+
+## Included variables
+
+| Variable | Unit | Description |
+| ------ | ------ | ------ |
+| air_density | kg/m^2 | Density of the air during the simulated race/lap. |
+| rain | boolean | Whether or not it is raining during the race/lap. |
+| snow | boolean | Whether or not it is snowing during the race/lap. |
+| rain_intensity | float, range 0-1 | Intensity of the rain |
+| snow_intensity | float, range 0-1 | Intensity of the snow |
+| wind_direction | radians, pi/2 is north | Direction of the wind during the race/lap. |
+| ambient_temp | celsius | Ambient temperature during the simulated race/lap. |
+| state_of_charge | amp hours remaining | The state of the car battery's charge at the beginning of the race/lap. |
+| speed | km/hr | The speed of the car at the beginning of the race/lap. |
+| engine_temp | celsius | The temperature of the engine at the beginning of the race/lap. |
