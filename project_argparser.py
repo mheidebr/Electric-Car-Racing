@@ -24,9 +24,6 @@ class SingleArg:
     
     #opens csv and creates dict with keys corresponding to the headers of the fastsim car csv file format
     def open_car_dict(self, input):
-
-        input = "cars/" + input
-
         if not os.path.exists(input):
             raise argparse.ArgumentTypeError('The file %s is not in the working directory' % input)
         else:
@@ -106,8 +103,6 @@ class SingleArg:
     # of the TUM track csv format. Left to right corresponds to 0 to 8.
     def open_track_dict(self, input):
 
-        input = "tracks/" + input
-
         if not os.path.exists(input):
             raise argparse.ArgumentTypeError('The file %s is not in the working directory' % input)
         else:
@@ -144,11 +139,11 @@ def call_args():
     arg_dict["car_arg"] = \
         SingleArg(parser=parser, key='-c', lng_key='--car',
                   help_msg='Load a custom car configuration — defaults to included file "./cars/fastsim_car_test.csv."',
-                  on_msg='void', off_msg='fastsim_car_test.csv')
+                  on_msg='void', off_msg='./cars/fastsim_car_test.csv')
     arg_dict["track_arg"] = \
         SingleArg(parser=parser, key='-t', lng_key='--track',
                  help_msg='Load a custom track configuration — defaults to included file "./tracks/hich_plains_track.csv."', 
-                 on_msg='void', off_msg='HPR_raceline_elevation_example.csv')
+                 on_msg='void', off_msg='./tracks/HPR_raceline_elevation_example.csv')
     arg_dict["output_arg"] = \
         SingleArg(parser=parser, key='-o', lng_key='--output',
                   help_msg='Specify a name for an output file — defaults to "./results/output.csv" by default.',
