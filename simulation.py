@@ -29,7 +29,7 @@ class SimulationThread(QThread):
     simulationThreadWalkBackCompleteSignal = pyqtSignal(int)  # sim_index where walkback completed
     breakpointDistance = 0
 
-    def __init__(self, passed_data_store, logger, track_data, car_data, parent=None):
+    def __init__(self, passed_data_store, logger, track_data, car_data, init_vals, parent=None):
         QThread.__init__(self, parent)
         
         self.logger = logger
@@ -46,7 +46,7 @@ class SimulationThread(QThread):
 
         # Initialize the simulation universe
         self._data_store = passed_data_store
-        self.initialize_race(track_data, car_data)
+        self.initialize_race(track_data, car_data, init_vals)
 
         # print('SimulationThread: __init()__')
         # print("SimulationThread: Simulation Index = {}".format(self._data_store.\
@@ -65,20 +65,17 @@ class SimulationThread(QThread):
 
         # rotational inertia estimation: http://www.hpwizard.com/rotational-inertia.html
 
-    def initialize_race(self, track_data, car_data):
+    def initialize_race(self, track_data, car_data, init_vals):
 
         segment_distance = 0.005  # meters, this must be very very small
         wheel_radius = 0.25  # m, ~20 in OD on tires
 
         track = TrackProperties()
-        track.set_air_density(track_data["air_density"])
+        track.set_air_density(float(init_vals["ENVIRONMENT"]["air_density"]))
 
-        for distance in track_data:
-            if str(distance) not in "air_density":
-                track.add_critical_point(distance, track_data[distance],
-                                        track.FREE_ACCELERATION)
-        # for distance in simple_track:
-        #    track.add_critical_point(distance, simple_track[distance], track.FREE_ACCELERATION)
+        for i in range(len(track_data)):
+            track.add_critical_point(track_data[i][0], track_data[i][5], track.FREE_ACCELERATION)
+
         track.generate_track_list(segment_distance)
 
         car = ElectricCarProperties()
