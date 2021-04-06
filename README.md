@@ -270,7 +270,7 @@ This file provides initial conditions for the simulation. These values do not ch
 
 | Variable | Unit | Description |
 | ------ | ------ | ------ |
-| air_density | kg/m^2 | Density of the air during the simulated race/lap. |
+| air_density | kg/m^3 | Density of the air during the simulated race/lap. |
 | rain | boolean | Whether or not it is raining during the race/lap. |
 | snow | boolean | Whether or not it is snowing during the race/lap. |
 | rain_intensity | float, range 0-1 | Intensity of the rain |
@@ -278,5 +278,5 @@ This file provides initial conditions for the simulation. These values do not ch
 | wind_direction | radians, pi/2 is north | Direction of the wind during the race/lap. |
 | ambient_temp | celsius | Ambient temperature during the simulated race/lap. |
 | state_of_charge | amp hours remaining | The state of the car battery's charge at the beginning of the race/lap. |
-| speed | km/hr | The speed of the car at the beginning of the race/lap. |
+| speed | m/s | The speed of the car at the beginning of the race/lap. |
 | engine_temp | celsius | The temperature of the engine at the beginning of the race/lap. |
